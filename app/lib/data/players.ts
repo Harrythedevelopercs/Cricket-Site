@@ -32,11 +32,11 @@ async function buildPlayerEntries(): Promise<{ entries: Entry[] }> {
     prisma.player.findMany({ where: { id: { in: playerIds } } }),
     prisma.playerBattingStat.findMany({
       where: { seriesId: { in: TRACKED_SERIES_IDS }, playerId: { in: playerIds } },
-      select: { playerId: true, seriesId: true, runs: true, matches: true },
+      select: { playerId: true, seriesId: true, teamId: true, runs: true, matches: true },
     }),
     prisma.playerBowlingStat.findMany({
       where: { seriesId: { in: TRACKED_SERIES_IDS }, playerId: { in: playerIds } },
-      select: { playerId: true, seriesId: true, wickets: true, matches: true },
+      select: { playerId: true, seriesId: true, teamId: true, wickets: true, matches: true },
     }),
     prisma.team.findMany({
       where: { id: { in: CCC_TEAM_IDS } },
@@ -69,20 +69,22 @@ async function buildPlayerEntries(): Promise<{ entries: Entry[] }> {
 
   const runs = new Map<number, number>();
   const wkts = new Map<number, number>();
-  // matches counted once per series (max of batting/bowling appearances), then summed
-  const matchesBySeries = new Map<number, Map<number, number>>();
-  const addMatches = (pid: number, sid: number, m: number) => {
-    const inner = matchesBySeries.get(pid) ?? new Map<number, number>();
-    inner.set(sid, Math.max(inner.get(sid) ?? 0, m ?? 0));
+  // matches counted once per (series, team) — batting and bowling rows for the same
+  // side repeat the same appearances (max), while rows for different teams in the same
+  // series are separate appearances (summed).
+  const matchesBySeries = new Map<number, Map<string, number>>();
+  const addMatches = (pid: number, key: string, m: number) => {
+    const inner = matchesBySeries.get(pid) ?? new Map<string, number>();
+    inner.set(key, Math.max(inner.get(key) ?? 0, m ?? 0));
     matchesBySeries.set(pid, inner);
   };
   batting.forEach((b) => {
     runs.set(b.playerId, (runs.get(b.playerId) ?? 0) + b.runs);
-    addMatches(b.playerId, b.seriesId, b.matches);
+    addMatches(b.playerId, `${b.seriesId}:${b.teamId}`, b.matches);
   });
   bowling.forEach((b) => {
     wkts.set(b.playerId, (wkts.get(b.playerId) ?? 0) + b.wickets);
-    addMatches(b.playerId, b.seriesId, b.matches);
+    addMatches(b.playerId, `${b.seriesId}:${b.teamId}`, b.matches);
   });
   const totalMatches = (pid: number) =>
     [...(matchesBySeries.get(pid)?.values() ?? [])].reduce((a, b) => a + b, 0);

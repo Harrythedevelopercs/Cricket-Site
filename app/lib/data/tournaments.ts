@@ -55,13 +55,17 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
       }),
     ]);
 
-  // League rank = 1-based position in the full division for that metric.
-  const battingRank = new Map<number, number>();
-  allBatting.forEach((b, i) => battingRank.set(b.playerId, i + 1));
-  const bowlingRank = new Map<number, number>();
-  allBowling.forEach((b, i) => bowlingRank.set(b.playerId, i + 1));
-  const fieldingRank = new Map<number, number>();
-  allFielding.forEach((f, i) => fieldingRank.set(f.playerId, i + 1));
+  // League rank = 1-based position in the full division for that metric. Rows are
+  // per (player, team) — a player who turned out for two teams has a row for each —
+  // so rank rows by their (player, team) identity, exactly as CricClubs lists them.
+  const rowKey = (r: { playerId: number; teamId: number }) =>
+    `${r.playerId}:${r.teamId}`;
+  const battingRank = new Map<string, number>();
+  allBatting.forEach((b, i) => battingRank.set(rowKey(b), i + 1));
+  const bowlingRank = new Map<string, number>();
+  allBowling.forEach((b, i) => bowlingRank.set(rowKey(b), i + 1));
+  const fieldingRank = new Map<string, number>();
+  allFielding.forEach((f, i) => fieldingRank.set(rowKey(f), i + 1));
 
   // Restrict player tables / Player of the Week to Club Cricket of Chicago.
   const isCCC = <T extends { teamName: string | null }>(r: T) =>
@@ -162,7 +166,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     hundreds: b.hundreds,
     no: b.notOuts,
     hs: b.highestScore ?? 0,
-    rank: battingRank.get(b.playerId) ?? null,
+    rank: battingRank.get(rowKey(b)) ?? null,
   }));
   const bowlingNumberZone = bowling.map((b) => ({
     player: fullName(b.firstName, b.lastName),
@@ -176,7 +180,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     fourW: b.fourWickets,
     fiveW: b.fiveWickets,
     db: b.dotBalls,
-    rank: bowlingRank.get(b.playerId) ?? null,
+    rank: bowlingRank.get(rowKey(b)) ?? null,
   }));
   const fieldingNumberZone = fielding.map((f) => ({
     player: fullName(f.firstName, f.lastName),
@@ -187,7 +191,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     idr: f.indirectRunOuts,
     stm: f.stumpings,
     to: f.total,
-    rank: fieldingRank.get(f.playerId) ?? null,
+    rank: fieldingRank.get(rowKey(f)) ?? null,
   }));
 
   // Overall points per player across the three stat tables over the FULL division,
@@ -200,6 +204,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
       name: string;
       teamName: string | null;
       pic: string | null;
+      isCCC: boolean;
       batting: number;
       bowling: number;
       fielding: number;
@@ -223,6 +228,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
         name: fullName(r.firstName, r.lastName),
         teamName: r.teamName,
         pic: r.profilePic,
+        isCCC: false,
         batting: 0,
         bowling: 0,
         fielding: 0,
@@ -230,6 +236,8 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     if (!e.name) e.name = fullName(r.firstName, r.lastName);
     if (!e.teamName) e.teamName = r.teamName;
     if (!e.pic) e.pic = r.profilePic;
+    // A player can have rows for more than one team; count them as CCC if ANY row is.
+    if (isCCCName(r.teamName)) e.isCCC = true;
     e[key] += r.points ?? 0;
     ptsMap.set(r.playerId, e);
   };
@@ -240,7 +248,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     .map((e) => ({ ...e, total: e.batting + e.bowling + e.fielding }))
     .sort((a, b) => b.total - a.total)
     .map((e, i) => ({ ...e, leagueRank: i + 1 }))
-    .filter((e) => isCCCName(e.teamName));
+    .filter((e) => e.isCCC);
 
   // topPlayers -> CCC's best OVERALL performers, ranked by total points
   // (batting + bowling + fielding).
@@ -253,15 +261,23 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     playerPosition: "Overall Points",
   }));
 
-  const rankingZone = cccOverall.map((e) => ({
-    player: e.name,
-    battingPoints: Math.round(e.batting),
-    bowlingPoints: Math.round(e.bowling),
-    fieldingPoints: Math.round(e.fielding),
-    otherPoints: 0,
-    total: Math.round(e.total),
-    rank: e.leagueRank,
-  }));
+  // Round each displayed column, then derive the displayed total from those SAME
+  // rounded values — rounding the raw total separately can disagree with the sum of
+  // the rounded columns, and the table must visibly add up.
+  const rankingZone = cccOverall.map((e) => {
+    const battingPoints = Math.round(e.batting);
+    const bowlingPoints = Math.round(e.bowling);
+    const fieldingPoints = Math.round(e.fielding);
+    return {
+      player: e.name,
+      battingPoints,
+      bowlingPoints,
+      fieldingPoints,
+      otherPoints: 0,
+      total: battingPoints + bowlingPoints + fieldingPoints,
+      rank: e.leagueRank,
+    };
+  });
 
   return {
     id: String(seriesId),

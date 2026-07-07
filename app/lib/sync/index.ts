@@ -234,7 +234,8 @@ export async function syncBattingStats(seriesId: number): Promise<number> {
     return [{
       seriesId,
       playerId: b.playerID,
-      teamId: numOrNull(b.teamId),
+      // Part of the PK: the feed has one row per (player, team) — see schema.
+      teamId: num(b.teamId),
       firstName: b.firstName ?? null,
       lastName: b.lastName ?? null,
       teamName: b.teamName ?? null,
@@ -267,7 +268,7 @@ export async function syncBowlingStats(seriesId: number): Promise<number> {
     return [{
       seriesId,
       playerId: b.playerID,
-      teamId: numOrNull(b.teamId),
+      teamId: num(b.teamId),
       firstName: b.firstName ?? null,
       lastName: b.lastName ?? null,
       teamName: b.teamName ?? null,
@@ -304,7 +305,7 @@ export async function syncFieldingStats(seriesId: number): Promise<number> {
     return [{
       seriesId,
       playerId: f.playerID,
-      teamId: numOrNull(f.teamId),
+      teamId: num(f.teamId),
       firstName: f.firstName ?? null,
       lastName: f.lastName ?? null,
       teamName: f.teamName ?? null,
@@ -362,22 +363,29 @@ export async function syncRosters(): Promise<{ players: number; roster: number }
   return { players, roster };
 }
 
-/** Store full scorecards for completed matches in `seriesIds` that aren't stored yet
- *  (capped per run). A finished scorecard is immutable, so each is fetched once. Returns
- *  the number newly fetched (>0 signals a match just finished). */
+/** Store full scorecards for completed matches in `seriesIds` (capped per run).
+ *  Scorecards are NOT immutable: scorers correct them after the fact (e.g. re-attributing
+ *  an innings to the right player), and CricClubs bumps the match's `lastUpdatedDate`
+ *  when they do. So fetch cards that are missing OR whose match row was updated upstream
+ *  after we stored the card. Returns the number fetched (>0 signals a match finished or
+ *  was corrected). */
 export async function syncScorecards(seriesIds: number[], cap = 20): Promise<number> {
   const completed = await prisma.match.findMany({
     where: { seriesId: { in: seriesIds }, isComplete: true },
-    select: { id: true },
+    select: { id: true, lastUpdated: true },
   });
   const stored = await prisma.matchScorecard.findMany({
     where: { matchId: { in: completed.map((m) => m.id) } },
-    select: { matchId: true },
+    select: { matchId: true, syncedAt: true },
   });
-  const have = new Set(stored.map((s) => s.matchId));
+  const storedAt = new Map(stored.map((s) => [s.matchId, s.syncedAt]));
   const missing = completed
+    .filter((m) => {
+      const at = storedAt.get(m.id);
+      if (!at) return true; // never stored
+      return m.lastUpdated != null && m.lastUpdated > at; // corrected upstream
+    })
     .map((m) => m.id)
-    .filter((id) => !have.has(id))
     .slice(0, cap);
   let count = 0;
   for (const matchId of missing) {
@@ -534,9 +542,10 @@ export async function syncAll(): Promise<{
 
   steps.rosters = await runStep("rosters", syncRosters);
 
-  // Scorecards for finished matches in the synced series (capped/run; immutable once
-  // stored). A new scorecard means a match just finished -> refresh CCC career stats,
-  // throttled to ~once/day.
+  // Scorecards for finished matches in the synced series (capped/run; re-fetched when
+  // the match row is updated upstream after we stored the card). A fetched scorecard
+  // means a match just finished or was corrected -> refresh CCC career stats, throttled
+  // to ~once/day.
   const syncedSeriesIds = seriesToSync.map((s) => s.id);
   const scStep = await runStep("scorecards", () => syncScorecards(syncedSeriesIds, 20));
   steps.scorecards = scStep;

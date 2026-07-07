@@ -60,12 +60,17 @@ async function buildPlayerProfile(playerId: number) {
     }
   }
 
-  // Season totals (count matches once per division)
-  const matchesBySeries = new Map<number, number>();
-  for (const b of batting)
-    matchesBySeries.set(b.seriesId, Math.max(matchesBySeries.get(b.seriesId) ?? 0, b.matches));
-  for (const b of bowling)
-    matchesBySeries.set(b.seriesId, Math.max(matchesBySeries.get(b.seriesId) ?? 0, b.matches));
+  // Season totals (count matches once per division side — batting and bowling rows for
+  // the same (series, team) repeat the same appearances; rows for different teams add)
+  const matchesBySeries = new Map<string, number>();
+  for (const b of batting) {
+    const k = `${b.seriesId}:${b.teamId}`;
+    matchesBySeries.set(k, Math.max(matchesBySeries.get(k) ?? 0, b.matches));
+  }
+  for (const b of bowling) {
+    const k = `${b.seriesId}:${b.teamId}`;
+    matchesBySeries.set(k, Math.max(matchesBySeries.get(k) ?? 0, b.matches));
+  }
 
   const season = {
     matches: [...matchesBySeries.values()].reduce((s, n) => s + n, 0),
