@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { fetchGraphQL } from '../lib/graphqlClient'
 import { getGroundsQuery } from '../lib/queries/groundsQuery'
+import { usePageTitle } from '../lib/usePageTitle'
 
 interface GroundImageProps {
   alt: string
@@ -187,7 +188,7 @@ function OverlayPanel({
         </div>
         <div className="OP_dis_text">
           <p className="white_color roboto-condensed-med p5">
-            *Midwest Cricket League | Season 2023 |
+            *Midwest Cricket Conference — historical ground averages
           </p>
         </div>
       </div>
@@ -255,6 +256,7 @@ function BGSlider({ groundsData }: { groundsData: GroundData[] }) {
 }
 
 export default function GroundSlider() {
+  usePageTitle('Grounds')
   const [groundsData, setGroundsData] = useState<GroundData[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -266,7 +268,18 @@ export default function GroundSlider() {
         const data = await fetchGraphQL(query)
 
         if (data && data.entries) {
-          setGroundsData(data.entries)
+          // The CMS entries carry long-standing misspellings in ground titles
+          // (source data we can't edit from here) — correct them for display.
+          const TITLE_FIXES: [RegExp, string][] = [
+            [/Washinington/gi, 'Washington'],
+            [/\bLincon\b/gi, 'Lincoln'],
+            [/\bVeron Hills\b/gi, 'Vernon Hills'],
+          ]
+          const fixTitle = (t: string) =>
+            TITLE_FIXES.reduce((s, [re, to]) => s.replace(re, to), t ?? '')
+          setGroundsData(
+            (data.entries as GroundData[]).map((g) => ({ ...g, title: fixTitle(g.title) }))
+          )
         } else {
           throw new Error('No grounds data returned from API')
         }

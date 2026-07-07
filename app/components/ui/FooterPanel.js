@@ -4,11 +4,10 @@ import LogoContainer from './LogoContainer'
 import Link from 'next/link'
 import Image from 'next/image'
 
-// Social media links
+// Social media links. Only profiles the club actually has — placeholder links
+// to twitter.com/instagram.com/facebook.com homepages were removed (re-add with
+// real profile URLs when available).
 const SOCIAL_LINKS = [
-  { href: 'https://twitter.com', icon: 'TwitterLogoWhite.svg', alt: 'Twitter' },
-  { href: 'https://instagram.com', icon: 'InstagramIconWhite.svg', alt: 'Instagram' },
-  { href: 'https://facebook.com', icon: 'FacebookiconWhite.svg', alt: 'Facebook' },
   { href: 'https://www.youtube.com/channel/UClH02lUKHkbEsWTlvBtNCkQ', icon: 'YoutubeLogoWhite.svg', alt: 'YouTube' },
 ]
 
@@ -17,9 +16,13 @@ const FOOTER_LINKS = [
   { href: '/schedule', label: 'Schedule' },
   { href: '/tournaments', label: 'Tournaments' },
   { href: '/players', label: 'Players' },
-  { href: 'https://www.youtube.com/channel/UClH02lUKHkbEsWTlvBtNCkQ', label: 'CCTV', newTab: true },
+  { href: '/records', label: 'Records' },
+  { href: '/reports', label: 'Match Reports' },
+  { href: '/about', label: 'Our Story' },
+  { href: 'https://www.youtube.com/channel/UClH02lUKHkbEsWTlvBtNCkQ', label: 'CCC TV', newTab: true },
   { href: '/ccc-academy', label: 'CCC Academy' },
   { href: '/grounds', label: 'Grounds' },
+  { href: '/join-us', label: 'Join Us' },
 ]
 
 function SocialIcon({ href, icon, alt }) {
@@ -53,7 +56,7 @@ export default function FooterPanel() {
               211 Valarie St, Glenview 60025,
             </p>
             <p className="roboto-condensed-regular p3 white_color">
-              Illinois, United State
+              Illinois, United States
             </p>
             
             <h4 className="oswald-med p1 brand_orange mb-4 mt-8">Contact us</h4>

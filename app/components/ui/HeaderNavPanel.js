@@ -6,6 +6,7 @@ import { useRef, useEffect, useState } from 'react'
 
 import { fetchGraphQL } from '../../lib/graphqlClient'
 import { getNavigationConfig } from '../../lib/queries/navigationQuery'
+import { localizeUrl } from '../../lib/localizeUrl'
 import Image from 'next/image'
 import ThemeToggle from './ThemeToggle'
 
@@ -34,12 +35,15 @@ function NavEleIco({ iconData }) {
 function NavEle({ navItem, setNewTab }) {
   const hasIcon = navItem.navigationIcon && navItem.navigationIcon.length > 0
   const imageEle = hasIcon ? <NavEleIco iconData={navItem.navigationIcon[0]} /> : <></>
-  const target = setNewTab || navItem.hyperlink.url.startsWith('http') ? '_blank' : undefined
+  // Own-domain absolute URLs from the CMS become relative, so only genuinely
+  // external links (YouTube, webmail…) open a new tab.
+  const url = localizeUrl(navItem.hyperlink.url)
+  const target = setNewTab || url.startsWith('http') ? '_blank' : undefined
 
   return (
     <div className="nav_ele flex_grid">
       <div className="nav_ele_text">
-        <Link href={navItem.hyperlink.url} target={target} className="no_underline p2">
+        <Link href={url} target={target} className="no_underline p2">
           {navItem.title}
         </Link>
       </div>
@@ -51,7 +55,7 @@ function NavEle({ navItem, setNewTab }) {
 function NavEleBtn({ navItem }) {
   return (
     <div className="nav_ele">
-      <Link href={navItem.hyperlink.url}>
+      <Link href={localizeUrl(navItem.hyperlink.url)}>
         <button className="nav_ele_btn">
           <p className="roboto-condensed-med p2">{navItem.title}</p>
         </button>
@@ -101,6 +105,13 @@ function MobileNav() {
   )
 }
 
+// Pages that live in this app but aren't in the CMS navigation yet. Merged in
+// client-side (before the button item) so they appear without a CMS release.
+const LOCAL_NAV_ITEMS = [
+  { id: 'local-records', title: 'Records', buttonToggle: false, hyperlink: { url: '/records' }, navigationIcon: [] },
+  { id: 'local-story', title: 'Our Story', buttonToggle: false, hyperlink: { url: '/about' }, navigationIcon: [] },
+]
+
 export default function HeaderNavPanel() {
   const headerRef = useRef(null)
   const [bgColor, setBgColor] = useState('unset')
@@ -115,7 +126,16 @@ export default function HeaderNavPanel() {
         const data = await fetchGraphQL(query)
 
         if (data && data.entries) {
-          setNavigationItems(data.entries)
+          const items = [...data.entries]
+          // LOG IN comes mid-list from the CMS; the club wants it as the last tab.
+          const loginIdx = items.findIndex(
+            (i) => !i.buttonToggle && /log\s*-?\s*in/i.test(i.title || '')
+          )
+          const login = loginIdx >= 0 ? items.splice(loginIdx, 1)[0] : null
+          const firstBtn = items.findIndex((i) => i.buttonToggle)
+          const at = firstBtn === -1 ? items.length : firstBtn
+          items.splice(at, 0, ...LOCAL_NAV_ITEMS, ...(login ? [login] : []))
+          setNavigationItems(items)
         } else {
           throw new Error('No navigation data returned from API')
         }
@@ -146,9 +166,10 @@ export default function HeaderNavPanel() {
   }, [])
 
   const getFullUrl = (url) => {
-    if (url?.startsWith('http')) return url
-    if (url?.startsWith('/')) return url
-    return `/${url}`
+    const local = localizeUrl(url)
+    if (local?.startsWith('http')) return local
+    if (local?.startsWith('/')) return local
+    return `/${local}`
   }
 
   const buttonItem = navigationItems.find((item) => item.buttonToggle)
@@ -184,7 +205,7 @@ export default function HeaderNavPanel() {
                   <div key={item.id} className="mob_nav_ele">
                     <Link
                       href={getFullUrl(item.hyperlink.url)}
-                      target={item.hyperlink.url.startsWith('http') ? '_blank' : undefined}
+                      target={getFullUrl(item.hyperlink.url).startsWith('http') ? '_blank' : undefined}
                       className="roboto-condensed-regular no_underline p2 white_color"
                     >
                       {item.title}

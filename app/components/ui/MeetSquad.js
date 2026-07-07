@@ -20,6 +20,27 @@ import rightImage from '../../../public/images/right-arrow.png';
 import leftImage from '../../../public/images/left-arrow.png';
 
 function SliderImageEle({ imgUrl, isActive }) {
+  if (!imgUrl) {
+    // No usable photo for this person — show a quiet crest panel rather than a
+    // broken image (or a logo pretending to be a face).
+    return (
+      <div className={`slider_ele ${isActive ? 'active' : ''}`}>
+        <div
+          className="w-full aspect-square bg-[var(--panel)] flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <Image
+            src="/images/ccc-logo3.png"
+            alt=""
+            width={120}
+            height={120}
+            className="opacity-40 object-contain"
+            unoptimized
+          />
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={`slider_ele ${isActive ? 'active' : ''}`}>
       <Image
@@ -65,6 +86,10 @@ function Slider({ onSetSlideIndex, sliderImagesRows }) {
 // Names to hide from the management carousel (left the club / no longer listed).
 const HIDDEN_MANAGEMENT = ['asfand', 'anish']
 
+// A CMS "player image" that is actually the club crest is treated as missing —
+// a logo is not a face.
+const looksLikeLogo = (url) => /logo|crest|ccc[-_]?logo/i.test(url || '')
+
 export default function MeetSquad({ data }) {
   const managementData = ((data && data.managementPlayerBlocks) || []).filter((p) => {
     const name = (p?.title || '').toLowerCase()
@@ -72,6 +97,23 @@ export default function MeetSquad({ data }) {
   })
   const [slideIndex, setSlideIndex] = useState(0)
   const [isDesktop, setIsDesktop] = useState(false)
+  // Roster photos from the DB (real CricClubs headshots), keyed by lowercased full
+  // name — used when the CMS entry has no real photo of the person.
+  const [rosterPics, setRosterPics] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/players')
+      .then((r) => r.json())
+      .then((d) => {
+        const map = {}
+        for (const e of d.entries || []) {
+          const url = e?.playerImage?.[0]?.url
+          if (e?.title && url) map[e.title.trim().toLowerCase()] = url
+        }
+        setRosterPics(map)
+      })
+      .catch(() => setRosterPics({}))
+  }, [])
 
   useEffect(() => {
     function handleResize() {
@@ -101,7 +143,8 @@ export default function MeetSquad({ data }) {
 
   const displayIndex = isDesktop ? getNextIndex(slideIndex) : slideIndex
 
-  // Build Slider slides
+  // Build Slider slides. CMS photo first; if it's missing or just the club
+  // logo, fall back to the person's real roster headshot (matched by name).
   const sliderImagesRows = managementData.map((player, idx) => {
     let imageUrl = ''
     if (Array.isArray(player.playerImage) && player.playerImage.length > 0) {
@@ -112,6 +155,10 @@ export default function MeetSquad({ data }) {
       player.playerImage.url
     ) {
       imageUrl = getFullImageUrl(player.playerImage.url)
+    }
+    if (!imageUrl || looksLikeLogo(imageUrl)) {
+      const rosterPic = rosterPics?.[(player.title || '').trim().toLowerCase()]
+      if (rosterPic) imageUrl = rosterPic
     }
     return (
       <SwiperSlide key={idx}>

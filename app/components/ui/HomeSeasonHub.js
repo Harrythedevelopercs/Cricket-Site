@@ -28,16 +28,34 @@ function SectionHeading({ children, sub }) {
   );
 }
 
-function StatTile({ label, value }) {
+// Recent-form strip: one square per completed match, oldest → newest.
+// Reads like a football form guide — a cricket-club fact, not a stat card.
+const FORM_STYLE = {
+  W: { bg: "var(--win)", label: "Won" },
+  L: { bg: "var(--loss)", label: "Lost" },
+  T: { bg: "var(--text-dim)", label: "Tied" },
+  N: { bg: "var(--panel-line)", label: "No result" },
+};
+function FormStrip({ form }) {
+  if (!form || form.length === 0) return null;
   return (
-    <div className="relative bg-[var(--panel)] rounded-[3vw] lg:rounded-[0.7vw] p-[5vw] lg:p-[1.6vw] border border-[var(--panel-line)] overflow-hidden transition-colors hover:border-[var(--orange)]">
-      <span className="absolute top-0 left-0 w-full h-[3px] bg-[var(--orange)]" />
-      <p className="oswald-bold text-[color:var(--orange)] text-[10vw] lg:text-[3vw] leading-none">
-        {Number(value || 0).toLocaleString()}
-      </p>
-      <p className="roboto-condensed-bold text-[color:var(--text-muted)] uppercase tracking-wider text-[3vw] lg:text-[0.85vw] mt-[2.5vw] lg:mt-[0.6vw]">
-        {label}
-      </p>
+    <div
+      className="flex items-center gap-[1.4vw] lg:gap-[0.35vw] mt-[3vw] lg:mt-[1vw]"
+      aria-label={`Recent form: ${form.map((f) => FORM_STYLE[f]?.label ?? f).join(", ")}`}
+    >
+      <span className="roboto-condensed-bold text-[color:var(--text-dim)] uppercase tracking-wider text-[2.6vw] lg:text-[0.7vw] mr-[1vw] lg:mr-[0.3vw]">
+        Form
+      </span>
+      {form.map((f, i) => (
+        <span
+          key={i}
+          title={FORM_STYLE[f]?.label ?? f}
+          className="oswald-bold text-white leading-none rounded-[1vw] lg:rounded-[0.25vw] w-[5.4vw] h-[5.4vw] lg:w-[1.4vw] lg:h-[1.4vw] flex items-center justify-center text-[3vw] lg:text-[0.75vw]"
+          style={{ backgroundColor: FORM_STYLE[f]?.bg ?? "var(--panel-line)", opacity: i === form.length - 1 ? 1 : 0.75 }}
+        >
+          {f}
+        </span>
+      ))}
     </div>
   );
 }
@@ -137,11 +155,51 @@ function DivisionCard({ d }) {
             <span className="text-[color:var(--text)] roboto-condensed-bold">{d.points}</span> Pts
           </span>
         </div>
+        <FormStrip form={d.form} />
         <p className="roboto-condensed-bold text-[color:var(--orange)] text-[3vw] lg:text-[0.8vw] uppercase mt-[4vw] lg:mt-[1vw] tracking-wider group-hover:underline">
           View table →
         </p>
       </div>
     </Link>
+  );
+}
+
+// "Stats updated Sun, Jun 28 · 9:40 PM" — when the CricClubs mirror last synced.
+function SyncStamp({ iso }) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const label = d.toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit",
+    timeZone: "America/Chicago",
+  });
+  return (
+    <p className="roboto-condensed-regular text-[color:var(--text-dim)] text-[2.8vw] lg:text-[0.78vw] mt-[3vw] lg:mt-[1vw]">
+      Stats updated {label} · via CricClubs
+    </p>
+  );
+}
+
+// A completed CCC match from a previous season, played around this week's date.
+function OnThisDayCard({ item }) {
+  if (!item) return null;
+  return (
+    <div className="ccc-card rounded-[3vw] lg:rounded-[0.7vw] p-[5vw] lg:p-[1.4vw] mt-[6vw] lg:mt-[1.6vw] flex flex-wrap items-center gap-x-[4vw] gap-y-[2vw] lg:gap-x-[1.4vw]">
+      <p className="ds-eyebrow ds-eyebrow--orange shrink-0">This week in club history</p>
+      <p className="roboto-condensed-bold text-[color:var(--text)] text-[3.8vw] lg:text-[1vw]">
+        {item.dateLabel}
+        <span className="text-[color:var(--text-muted)] font-normal"> · CCC </span>
+        <span className="text-[color:var(--orange)]">{item.cccScore}</span>
+        <span className="text-[color:var(--text-muted)] font-normal"> vs {item.opponentName} </span>
+        {item.oppScore}
+      </p>
+      {item.result && (
+        <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.85vw]">
+          {item.result}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -156,32 +214,35 @@ export default function HomeSeasonHub() {
   }, []);
 
   if (!data || data.error) return null;
-  const { season, stats, topBatsmen, topBowlers, divisions } = data;
+  const { season, stats, topBatsmen, topBowlers, divisions, syncedAt, onThisDay } = data;
 
   return (
     <section className="base_paddings py-[9vw] lg:py-[3vw] relative z-[6]">
       <div className="max_content center_aligned mx-auto">
-        <SectionHeading sub={`${season} — so far`}>By the Numbers</SectionHeading>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[3vw] lg:gap-[1.2vw] mb-[11vw] lg:mb-[3.5vw]">
-          <StatTile label="Matches" value={stats.matches} />
-          <StatTile label="Runs" value={stats.runs} />
-          <StatTile label="Wickets" value={stats.wickets} />
-          <StatTile label="Sixes" value={stats.sixes} />
-        </div>
-
-        <SectionHeading sub="Club Cricket of Chicago leaders">
-          Leading This Season
+        <SectionHeading
+          sub={`${season} — ${Number(stats.matches).toLocaleString()} matches · ${Number(
+            stats.runs
+          ).toLocaleString()} runs · ${Number(stats.wickets).toLocaleString()} wickets · ${Number(
+            stats.sixes
+          ).toLocaleString()} sixes`}
+        >
+          Our Divisions
         </SectionHeading>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw] mb-[11vw] lg:mb-[3.5vw]">
-          <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
-          <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
-        </div>
-
-        <SectionHeading sub="Where we stand">Our Divisions</SectionHeading>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.4vw]">
           {divisions.map((d) => (
             <DivisionCard key={d.slug} d={d} />
           ))}
+        </div>
+        <SyncStamp iso={syncedAt} />
+        <OnThisDayCard item={onThisDay} />
+        <div className="mb-[11vw] lg:mb-[3.5vw]" />
+
+        <SectionHeading sub="Club Cricket of Chicago leaders">
+          Leading This Season
+        </SectionHeading>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw]">
+          <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
+          <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
         </div>
       </div>
     </section>

@@ -13,6 +13,7 @@ import SponsorsBanner from '../components/ui/SponsorsBanner'
 import FixturesGrid from '../components/ui/FixturesGrid'
 import TournamentSection from '../components/ui/TournamentSection'
 import HeroBannerSkeleton from '../components/skeletons/HeroBannerSkeleton'
+import { usePageTitle } from '../lib/usePageTitle'
 
 const AcademyPageContent = () => {
   const [pageData, setPageData] = useState(null)
@@ -69,7 +70,14 @@ const AcademyPageContent = () => {
         case 'meetTheManagement':
           return <MeetSquad key={block.id} data={block} />
         case 'banner':
-          return <BGParralaxBanner key={block.id} data={block} />
+          // Real club photography (pregame warmup) instead of the CMS stock
+          // helmet shot — the copy still comes from the CMS.
+          return (
+            <BGParralaxBanner
+              key={block.id}
+              data={{ ...block, localBgOverride: '/images/club/academy.jpg' }}
+            />
+          )
         case 'sponsorsBanner':
           return <SponsorsBanner key={block.id} data={block} />
         default:
@@ -82,6 +90,7 @@ const AcademyPageContent = () => {
 }
 
 export default function Page() {
+  usePageTitle('CCC Academy')
   return (
     <section className="w-full h-full bg-repeat-y bg-[100%]">
       <AcademyPageContent />

@@ -42,6 +42,7 @@ async function buildCalendarEntries(): Promise<{ entries: Entry[] }> {
       t2Name: f.teamTwoName ?? "",
       t1t2NativeFlag: cccIsTeamTwo,
       groundsName: f.location ?? "",
+      division: f.seriesName ?? "",
       date: dateIso,
       t1Logo: [{ url: img(f.teamOneLogo), alt: f.teamOneName ?? "" }],
       t2Logo: [{ url: img(f.teamTwoLogo), alt: f.teamTwoName ?? "" }],

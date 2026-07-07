@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Skel } from '../components/skeletons/PageSkeletons';
+import { usePageTitle } from '../lib/usePageTitle';
 // Tournaments list comes from the local DB (Neon) via /api/tournaments (includes 2026).
 
 // Short, human format tag derived from the series name.
@@ -53,6 +54,7 @@ function TournamentCard({ seriesName, year, hyperLink }) {
 }
 
 export default function Page() {
+  usePageTitle('Tournaments');
   const [groupedTournaments, setGroupedTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

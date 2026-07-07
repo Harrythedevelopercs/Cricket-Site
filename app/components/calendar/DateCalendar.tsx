@@ -75,8 +75,9 @@ export default function DateCalendar({ matches: rawMatches }: DateCalendarProps)
     return matchesByDate[dayKey] ?? null;
   };
 
-  // Generate all the days in the current visible month (plus extra days at edges)
-  const generateCalendarDays = () => {
+  // Generate all the days in the current visible month (plus extra days at edges).
+  // Defined inside useMemo so the hook's dependency list stays honest (lint-clean).
+  const calendarDays = useMemo(() => {
     const firstDayOfMonth = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
@@ -103,9 +104,7 @@ export default function DateCalendar({ matches: rawMatches }: DateCalendarProps)
       currentDay.setDate(currentDay.getDate() + 1);
     }
     return days;
-  };
-
-  const calendarDays = useMemo(() => generateCalendarDays(), [currentMonth]);
+  }, [currentMonth]);
 
   const today = new Date();
 

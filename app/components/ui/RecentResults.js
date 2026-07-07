@@ -4,9 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 
 // Format the stored match date (UTC, to avoid an off-by-one day shift).
+// CricClubs matchDate is "MM/DD/YYYY" — parse via Date.UTC so browsers east of
+// UTC don't render the previous day.
 function formatResultDate(s) {
   if (!s) return "";
-  const d = new Date(s);
+  const mdY = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s).trim());
+  const d = mdY
+    ? new Date(Date.UTC(Number(mdY[3]), Number(mdY[1]) - 1, Number(mdY[2])))
+    : new Date(s);
   if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }

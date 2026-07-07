@@ -4489,6 +4489,102 @@ header.main_header .nav_ele_text a:hover { opacity: 1; color: var(--orange); }
 /* footer / section echo of the skyline, kept very quiet */
 .ccc-skyline--ghost { opacity: 0.5; }
 
+/* ---------- Hero cast — the club's own players on rotation ----------
+   CMS studio cutouts (transparent PNGs, so no photo boundary to hide). One player
+   at a time, standing over the skyline between the headline and the scoreboard;
+   slow crossfade. The scoreboard card (z-3) intentionally floats in front. */
+.ccc-hero-cast {
+  position: absolute;
+  z-index: 2;
+  bottom: clamp(150px, 15vw, 250px);
+  left: auto;
+  right: clamp(40px, 8vw, 170px);
+  /* The player owns the whole right side, standing over the skyline — nothing
+     overlaps him (the next-match info lives in the strip under the CTAs). */
+  height: clamp(520px, 72vh, 780px);
+  width: clamp(360px, 40vw, 620px);
+  pointer-events: none;
+  display: none;
+}
+/* Soft dusk backlight so dark kit separates from the dark sky. */
+.ccc-hero-cast::before {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 12%;
+  bottom: -6%;
+  background: radial-gradient(46% 58% at 50% 58%, var(--glow) 0%, transparent 72%);
+  filter: blur(24px);
+  opacity: 0.9;
+}
+@media (min-width: 1024px) {
+  .ccc-hero-cast { display: block; }
+}
+.ccc-hero-cast-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 2.2s ease, transform 2.2s ease;
+}
+.ccc-hero-cast-slide.is-active {
+  opacity: 1;
+  transform: none;
+}
+.ccc-hero-cast-slide img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  /* The dusk-orange rim light traces the cutout silhouette so dark kit still
+     separates from the night sky. */
+  filter: saturate(0.92) contrast(1.03)
+    drop-shadow(0 26px 60px rgba(5, 7, 12, 0.5))
+    drop-shadow(0 0 22px rgba(244, 122, 42, 0.32));
+  -webkit-mask-image: linear-gradient(180deg, #000 86%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 86%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccc-hero-cast-slide { transition: opacity 0.3s ease; transform: none; }
+}
+
+/* ---------- Cricket-ball "moon" — a stitched seam hanging low in the dusk sky ---------- */
+.ccc-hero-ball {
+  position: absolute;
+  top: clamp(48px, 8vh, 120px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(116px, 17vw, 280px);
+  height: auto;
+  z-index: 1;
+  color: var(--orange);
+  opacity: 0.16;
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  .ccc-hero-ball { left: auto; right: 5%; top: 86px; width: 104px; transform: none; opacity: 0.22; }
+}
+
+/* ---------- League / format chip (scoreboard cue) ---------- */
+.ccc-chip {
+  display: inline-block;
+  padding: 0.36em 0.78em;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--orange) 42%, transparent);
+  background: color-mix(in srgb, var(--orange) 10%, transparent);
+  color: var(--orange);
+  font-family: var(--font-oswald), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.58rem, 2.7vw, 0.72rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
 /* ---------- Next-match scoreboard card ---------- */
 .ccc-scorecard {
   background: rgba(12, 17, 29, 0.72);

@@ -2,8 +2,8 @@
     {
         "id":1,
         "groundName":"Washington Park",
-        "groundImage":"/images/grounds/Washinington_Park_Cricket_Ground.jpg",
-        "groundMobileImage":"/images/grounds/Washinington_Park_Cricket_Ground_Mobile.jpg",
+        "groundImage":"/images/grounds/Washington_Park_Cricket_Ground.jpg",
+        "groundMobileImage":"/images/grounds/Washington_Park_Cricket_Ground_Mobile.jpg",
         "matches":240,
         "avgFirstInning":135,
         "avgSecondInning":107,

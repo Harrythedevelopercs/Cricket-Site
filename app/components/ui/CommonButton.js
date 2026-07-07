@@ -1,12 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { localizeUrl } from '../../lib/localizeUrl'
 
 export default function CommonButton({ children, setRoutePath, className = '' }) {
   const router = useRouter()
 
   function handleClick() {
-    router.push(setRoutePath)
+    router.push(localizeUrl(setRoutePath))
   }
 
   return (

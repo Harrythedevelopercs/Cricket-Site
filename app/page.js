@@ -5,7 +5,9 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, Fragment } from "react";
 import HeroBanner from "./components/ui/HeroBanner";
 import RecentResults from "./components/ui/RecentResults";
-import NewSeasonCounter from "./components/ui/NewSeasonCounter";
+import MatchReports from "./components/ui/MatchReports";
+import ClubGallery from "./components/ui/ClubGallery";
+import ClubTV from "./components/ui/ClubTV";
 import MeetSquad from "./components/ui/MeetSquad";
 import BGParralaxBanner from "./components/ui/BGParralaxBanner";
 import SponsorsBanner from "./components/ui/SponsorsBanner";
@@ -23,6 +25,7 @@ const HomePageContent = () => {
   // Upcoming fixtures + recent results come from the local DB (Neon); editorial stays on the CMS.
   const [dbFixtures, setDbFixtures] = useState(null);
   const [recentResults, setRecentResults] = useState(null);
+  const [matchReports, setMatchReports] = useState(null);
 
   useEffect(() => {
     const query = getHomePageQuery();
@@ -44,6 +47,11 @@ const HomePageContent = () => {
       .then((r) => r.json())
       .then((d) => setRecentResults(d.results || []))
       .catch(() => setRecentResults([]));
+
+    fetch("/api/match-reports?limit=3")
+      .then((r) => r.json())
+      .then((d) => setMatchReports(d.reports || []))
+      .catch(() => setMatchReports([]));
   }, []);
 
   if (error) {
@@ -69,7 +77,7 @@ const HomePageContent = () => {
     return pageData.entries[0].homePageBlocks.map((block) => {
       switch (block.typeHandle) {
         case "homeHeroBanner":
-          return <HeroBanner key={block.id} fixtures={dbFixtures} />;
+          return <HeroBanner key={block.id} fixtures={dbFixtures} data={block} />;
         case "fixturesGrid":
           return (
             <Fragment key={block.id}>
@@ -81,17 +89,17 @@ const HomePageContent = () => {
               />
               <HomeSeasonHub />
               <RecentResults results={recentResults ?? []} />
+              <MatchReports reports={matchReports ?? []} />
+              <ClubGallery />
+              <ClubTV />
             </Fragment>
           );
         case "tournamentSection":
           return <TournamentSection key={block.id} data={block} />;
-        case "timerBanner": {
-          // Count down to the next actual fixture (from the DB), not a CMS-set date.
-          const nextMatch = (dbFixtures || []).find(
-            (f) => f?.date && new Date(f.date).getTime() >= Date.now() - 6 * 3600 * 1000
-          );
-          return <NewSeasonCounter key={block.id} data={block} nextMatch={nextMatch} />;
-        }
+        case "timerBanner":
+          // Retired: the hero already carries the next-match card, so a second
+          // full-width countdown on the same page was pure repetition.
+          return <Fragment key={block.id} />;
         case "meetTheManagement":
           return <MeetSquad key={block.id} data={block} />;
         case "banner":

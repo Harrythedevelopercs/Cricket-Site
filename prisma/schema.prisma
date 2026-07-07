@@ -166,10 +166,12 @@ model Standing {
 }
 
 /// Per-series batting leaderboard ("Number Zone"), from /stats/getBattingStats.
+/// The source returns one row per (player, team) — a player who turns out for two
+/// teams in the same series has a separate row for each — so teamId is part of the key.
 model PlayerBattingStat {
   seriesId     Int      @map("series_id")
   playerId     Int      @map("player_id")
-  teamId       Int?     @map("team_id")
+  teamId       Int      @default(0) @map("team_id")
   firstName    String?  @map("first_name")
   lastName     String?  @map("last_name")
   teamName     String?  @map("team_name")
@@ -187,15 +189,16 @@ model PlayerBattingStat {
   points       Float?
   syncedAt     DateTime @default(now()) @updatedAt @map("synced_at")
 
-  @@id([seriesId, playerId])
+  @@id([seriesId, playerId, teamId])
   @@map("player_batting_stats")
 }
 
 /// Per-series bowling leaderboard, from /stats/getBowlingStats.
+/// One row per (player, team), like PlayerBattingStat.
 model PlayerBowlingStat {
   seriesId    Int      @map("series_id")
   playerId    Int      @map("player_id")
-  teamId      Int?     @map("team_id")
+  teamId      Int      @default(0) @map("team_id")
   firstName   String?  @map("first_name")
   lastName    String?  @map("last_name")
   teamName    String?  @map("team_name")
@@ -217,15 +220,16 @@ model PlayerBowlingStat {
   points      Float?
   syncedAt    DateTime @default(now()) @updatedAt @map("synced_at")
 
-  @@id([seriesId, playerId])
+  @@id([seriesId, playerId, teamId])
   @@map("player_bowling_stats")
 }
 
 /// Per-series fielding leaderboard, from /stats/getFeildingStats (API spelling).
+/// One row per (player, team), like PlayerBattingStat.
 model PlayerFieldingStat {
   seriesId        Int      @map("series_id")
   playerId        Int      @map("player_id")
-  teamId          Int?     @map("team_id")
+  teamId          Int      @default(0) @map("team_id")
   firstName       String?  @map("first_name")
   lastName        String?  @map("last_name")
   teamName        String?  @map("team_name")
@@ -240,7 +244,7 @@ model PlayerFieldingStat {
   points          Float?
   syncedAt        DateTime @default(now()) @updatedAt @map("synced_at")
 
-  @@id([seriesId, playerId])
+  @@id([seriesId, playerId, teamId])
   @@map("player_fielding_stats")
 }
 
@@ -256,9 +260,10 @@ model SyncState {
   @@map("sync_state")
 }
 
-/// Full scorecard (innings/batting/bowling cards) for a finished match, fetched once from
-/// /scoreCard/getScoreCard and stored verbatim. Finished scorecards never change, so the
-/// Match Centre reads from here instead of calling CricClubs per page view.
+/// Full scorecard (innings/batting/bowling cards) for a finished match, from
+/// /scoreCard/getScoreCard and stored verbatim so the Match Centre reads from here
+/// instead of calling CricClubs per page view. Re-fetched by the sync when the match
+/// row's lastUpdated moves past syncedAt (scorers correct cards after the fact).
 model MatchScorecard {
   matchId  Int      @id @map("match_id") // CricClubs matchId
   data     Json // raw getScoreCard payload (innings1..4)

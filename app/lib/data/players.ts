@@ -6,7 +6,12 @@
 
 import { unstable_cache } from "next/cache";
 import { prisma } from "../db/prisma";
-import { CCC_TEAM_IDS, TRACKED_SERIES_IDS } from "../cricclubs/config";
+import { CCC_TEAM_IDS, TRACKED_SERIES_IDS, TRACKED_SERIES } from "../cricclubs/config";
+
+// Current-season divisions, for naming which side a captain leads.
+const SEASON_YEAR = String(Math.max(...TRACKED_SERIES.map((s) => Number(s.year))));
+const SEASON_SERIES = TRACKED_SERIES.filter((s) => s.year === SEASON_YEAR);
+const SEASON_IDS = SEASON_SERIES.map((s) => s.id);
 
 const IMG = "https://media.cricclubs.com";
 const img = (p?: string | null) =>
@@ -23,34 +28,63 @@ async function buildPlayerEntries(): Promise<{ entries: Entry[] }> {
   const playerIds = [...new Set(rosterRows.map((r) => r.playerId))];
   if (playerIds.length === 0) return { entries: [] };
 
-  const [players, batting, bowling] = await Promise.all([
+  const [players, batting, bowling, cccTeams, teamStandings] = await Promise.all([
     prisma.player.findMany({ where: { id: { in: playerIds } } }),
     prisma.playerBattingStat.findMany({
       where: { seriesId: { in: TRACKED_SERIES_IDS }, playerId: { in: playerIds } },
-      select: { playerId: true, seriesId: true, runs: true, matches: true },
+      select: { playerId: true, seriesId: true, teamId: true, runs: true, matches: true },
     }),
     prisma.playerBowlingStat.findMany({
       where: { seriesId: { in: TRACKED_SERIES_IDS }, playerId: { in: playerIds } },
-      select: { playerId: true, seriesId: true, wickets: true, matches: true },
+      select: { playerId: true, seriesId: true, teamId: true, wickets: true, matches: true },
+    }),
+    prisma.team.findMany({
+      where: { id: { in: CCC_TEAM_IDS } },
+      select: { id: true, captainId: true, viceCaptainId: true },
+    }),
+    prisma.standing.findMany({
+      where: { teamId: { in: CCC_TEAM_IDS }, seriesId: { in: SEASON_IDS } },
+      select: { teamId: true, seriesId: true },
     }),
   ]);
 
+  // CricClubs records a captain + vice-captain per side; CCC fields one side per
+  // division, so a player can lead any of them. The team → division mapping comes
+  // from where each team id stands this season.
+  const divisionByTeam = new Map<number, string>();
+  for (const s of teamStandings) {
+    const name = SEASON_SERIES.find((x) => x.id === s.seriesId)?.name;
+    if (name && !divisionByTeam.has(s.teamId)) divisionByTeam.set(s.teamId, name);
+  }
+  const captainDivision = new Map<number, string | undefined>();
+  const viceCaptainDivision = new Map<number, string | undefined>();
+  for (const t of cccTeams) {
+    if (t.captainId && !captainDivision.has(t.captainId))
+      captainDivision.set(t.captainId, divisionByTeam.get(t.id));
+    if (t.viceCaptainId && !viceCaptainDivision.has(t.viceCaptainId))
+      viceCaptainDivision.set(t.viceCaptainId, divisionByTeam.get(t.id));
+  }
+  const captainIds = new Set(captainDivision.keys());
+  const viceCaptainIds = new Set(viceCaptainDivision.keys());
+
   const runs = new Map<number, number>();
   const wkts = new Map<number, number>();
-  // matches counted once per series (max of batting/bowling appearances), then summed
-  const matchesBySeries = new Map<number, Map<number, number>>();
-  const addMatches = (pid: number, sid: number, m: number) => {
-    const inner = matchesBySeries.get(pid) ?? new Map<number, number>();
-    inner.set(sid, Math.max(inner.get(sid) ?? 0, m ?? 0));
+  // matches counted once per (series, team) — batting and bowling rows for the same
+  // side repeat the same appearances (max), while rows for different teams in the same
+  // series are separate appearances (summed).
+  const matchesBySeries = new Map<number, Map<string, number>>();
+  const addMatches = (pid: number, key: string, m: number) => {
+    const inner = matchesBySeries.get(pid) ?? new Map<string, number>();
+    inner.set(key, Math.max(inner.get(key) ?? 0, m ?? 0));
     matchesBySeries.set(pid, inner);
   };
   batting.forEach((b) => {
     runs.set(b.playerId, (runs.get(b.playerId) ?? 0) + b.runs);
-    addMatches(b.playerId, b.seriesId, b.matches);
+    addMatches(b.playerId, `${b.seriesId}:${b.teamId}`, b.matches);
   });
   bowling.forEach((b) => {
     wkts.set(b.playerId, (wkts.get(b.playerId) ?? 0) + b.wickets);
-    addMatches(b.playerId, b.seriesId, b.matches);
+    addMatches(b.playerId, `${b.seriesId}:${b.teamId}`, b.matches);
   });
   const totalMatches = (pid: number) =>
     [...(matchesBySeries.get(pid)?.values() ?? [])].reduce((a, b) => a + b, 0);
@@ -77,6 +111,13 @@ async function buildPlayerEntries(): Promise<{ entries: Entry[] }> {
     wickets: wkts.get(p.id) ?? 0,
     scorebycaptain: 0,
     playerid: p.id,
+    isCaptain: captainIds.has(p.id),
+    isViceCaptain: !captainIds.has(p.id) && viceCaptainIds.has(p.id),
+    leadershipLabel: captainIds.has(p.id)
+      ? `Captain${captainDivision.get(p.id) ? ` — ${captainDivision.get(p.id)}` : ""}`
+      : viceCaptainIds.has(p.id)
+      ? `Vice-captain${viceCaptainDivision.get(p.id) ? ` — ${viceCaptainDivision.get(p.id)}` : ""}`
+      : null,
   }));
 
   entries.sort(

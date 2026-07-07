@@ -4,12 +4,14 @@ import Image from "next/image";
 import React from "react";
 // Visuals are theme-aware: the legacy gold `sponsors_bg.png` background image is
 // retired in favor of a token surface (var(--ink)) that works in both themes.
+// Sponsor content is CMS-managed — the club updates it there.
 
 export default function SponsorsBanner({ data }) {
   // Adjust this to match your CMS base URL
   const cmsBaseUrl = process.env.NEXT_PUBLIC_CMS_URL || "https://cms-ccc.ddev.site/";
 
-  // Helper to build a full absolute URL (if the sponsor image's url isn't already absolute)
+  // Helper to build a full absolute URL — CMS asset urls are host-relative
+  // ("/images/...") and must be prefixed with the CMS base.
   const getFullImageUrl = (url) => {
     if (!url) return "/images/placeholder.png";
     if (url.startsWith("http")) return url;
@@ -35,6 +37,10 @@ export default function SponsorsBanner({ data }) {
     { image: sponsorThree, link: sponsorThreeLink },
   ].filter((item) => item.image); // keep only sponsors that have an image
 
+  // No sponsors in the CMS → no band. An empty "Our Sponsors" heading reads
+  // worse than no section at all.
+  if (sponsorItems.length === 0) return null;
+
   return (
     <section className="sponsors-banner relative py-16 px-4 bg-[#F5F3ED]">
       {/* Sponsor logos are mixed formats (some have baked-in white backgrounds),
@@ -50,12 +56,14 @@ export default function SponsorsBanner({ data }) {
         <div
           className={`
             grid 
-            ${sponsorItems.length <= 1 
-              ? "grid-cols-1" 
+            ${sponsorItems.length <= 1
+              ? "grid-cols-1"
               : sponsorItems.length === 2
               ? "grid-cols-1 md:grid-cols-2"
-              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-            } 
+              : sponsorItems.length === 3
+              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              : "grid-cols-2 md:grid-cols-2 lg:grid-cols-4"
+            }
             gap-8 w-full mx-auto
           `}
         >
@@ -110,6 +118,17 @@ export default function SponsorsBanner({ data }) {
             );
           })}
         </div>
+
+        {/* Real clubs are always recruiting backers — say so. */}
+        <p className="text-center mt-10 roboto-condensed-regular text-[#16202E]/70 text-sm">
+          Want your brand alongside the club?{" "}
+          <a
+            href="mailto:connect@clubcricketofchicago.com?subject=Sponsoring%20Club%20Cricket%20of%20Chicago"
+            className="underline underline-offset-2 hover:text-[#16202E]"
+          >
+            Sponsor Club Cricket of Chicago →
+          </a>
+        </p>
       </div>
     </section>
   );

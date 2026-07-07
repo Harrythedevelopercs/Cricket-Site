@@ -27,7 +27,11 @@ export default function BGParralaxBanner({ data }) {
       : '/images/logo.png'
 
   let backgroundImage = '/images/placeholder_banner_bg.jpg'
-  if (data && data.backgroundImage && data.backgroundImage[0] && data.backgroundImage[0].url) {
+  if (data && data.localBgOverride) {
+    // Page-supplied local photo takes precedence over the CMS image (used to put
+    // real club photography behind CMS-authored banner copy).
+    backgroundImage = data.localBgOverride
+  } else if (data && data.backgroundImage && data.backgroundImage[0] && data.backgroundImage[0].url) {
     backgroundImage = getFullImageUrl(data.backgroundImage[0].url)
   } else if (data && data.bgImage && data.bgImage[0] && data.bgImage[0].url) {
     backgroundImage = getFullImageUrl(data.bgImage[0].url)
