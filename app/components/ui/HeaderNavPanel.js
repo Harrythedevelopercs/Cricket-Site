@@ -1,18 +1,19 @@
 "use client"
 
-import LogoContainer from './LogoContainer'
+import * as Dialog from '@radix-ui/react-dialog'
+import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { fetchGraphQL } from '../../lib/graphqlClient'
-import { getNavigationConfig } from '../../lib/queries/navigationQuery'
 import { localizeUrl } from '../../lib/localizeUrl'
-import Image from 'next/image'
+import { getNavigationConfig } from '../../lib/queries/navigationQuery'
+import { buildNavigationItems } from './navigationModel'
+import LogoContainer from './LogoContainer'
 import ThemeToggle from './ThemeToggle'
 
 function NavEleIco({ iconData }) {
   const cmsBaseUrl = process.env.NEXT_PUBLIC_CMS_URL || 'https://cms-ccc.ddev.site/'
-
   const getFullImageUrl = (url) => {
     if (url?.startsWith('http') || url?.startsWith('/images')) return url
     const cleanUrl = url?.startsWith('/') ? url.substring(1) : url
@@ -32,33 +33,34 @@ function NavEleIco({ iconData }) {
   )
 }
 
-function NavEle({ navItem, setNewTab }) {
-  const hasIcon = navItem.navigationIcon && navItem.navigationIcon.length > 0
-  const imageEle = hasIcon ? <NavEleIco iconData={navItem.navigationIcon[0]} /> : <></>
-  // Own-domain absolute URLs from the CMS become relative, so only genuinely
-  // external links (YouTube, webmail…) open a new tab.
-  const url = localizeUrl(navItem.hyperlink.url)
-  const target = setNewTab || url.startsWith('http') ? '_blank' : undefined
+function destinationFor(navItem) {
+  return localizeUrl(navItem.hyperlink.url)
+}
+
+function NavEle({ navItem }) {
+  const url = destinationFor(navItem)
+  const external = url.startsWith('http')
+  const iconData = navItem.navigationIcon?.[0]
 
   return (
     <div className="nav_ele flex_grid">
       <div className="nav_ele_text">
-        <Link href={url} target={target} className="no_underline p2">
+        <Link href={url} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} className="no_underline p2">
           {navItem.title}
+          {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
         </Link>
       </div>
-      {imageEle}
+      {iconData ? <NavEleIco iconData={iconData} /> : null}
     </div>
   )
 }
 
-function NavEleBtn({ navItem }) {
+function NavEleBtn({ navItem, onNavigate }) {
+  const url = destinationFor(navItem)
   return (
     <div className="nav_ele">
-      <Link href={localizeUrl(navItem.hyperlink.url)}>
-        <button className="nav_ele_btn">
-          <p className="roboto-condensed-med p2">{navItem.title}</p>
-        </button>
+      <Link href={url} onClick={onNavigate} className="nav_ele_btn roboto-condensed-med p2">
+        {navItem.title}
       </Link>
     </div>
   )
@@ -66,165 +68,117 @@ function NavEleBtn({ navItem }) {
 
 function NavContainer({ navigationItems }) {
   return (
-    <div className="nav_container flex_grid">
-      {navigationItems.map((item) => {
-        if (item.buttonToggle) {
-          return <NavEleBtn key={item.id} navItem={item} />
-        } else {
-          return <NavEle key={item.id} navItem={item} />
-        }
-      })}
-    </div>
+    <nav className="nav_container flex_grid" aria-label="Primary navigation">
+      {navigationItems.map((item) =>
+        item.buttonToggle ? <NavEleBtn key={item.id} navItem={item} /> : <NavEle key={item.id} navItem={item} />
+      )}
+    </nav>
   )
 }
 
-function MobileNav() {
-  const HandleHamClick = () => {
-    const ele = document.getElementById('mobNav_hamIcon')
-    const mobEle = document.getElementById('mobileNav_ref')
-
-    if (ele && mobEle) {
-      if (ele.classList.contains('nav-open')) {
-        ele.classList.remove('nav-open')
-        mobEle.classList.remove('active_nav')
-      } else {
-        ele.classList.add('nav-open')
-        mobEle.classList.add('active_nav')
-      }
-    }
-  }
+function MobileNavigation({ navigationItems, loading }) {
+  const [open, setOpen] = useState(false)
+  const buttonItem = navigationItems.find((item) => item.buttonToggle)
 
   return (
-    <div className="mobile_nav_ele">
-      <div id="mobNav_hamIcon" className="nav_burger mobile-only" onClick={HandleHamClick}>
-        <span></span>
-        <span></span>
-        <span></span>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <div className="mobile_nav_ele">
+        <Dialog.Trigger asChild>
+          <button
+            type="button"
+            className={`nav_burger mobile-only${open ? ' nav-open' : ''}`}
+            aria-label={open ? 'Close site menu' : 'Open site menu'}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </Dialog.Trigger>
       </div>
-    </div>
+
+      <Dialog.Portal>
+        <Dialog.Overlay className="mobile_navigation_overlay" />
+        <Dialog.Content className="mobile_navigation" aria-describedby={undefined}>
+          <Dialog.Title className="sr-only">Site navigation</Dialog.Title>
+          <div className="mobile_navigation_topline">
+            <span className="ds-label">Explore CCC</span>
+            <Dialog.Close asChild>
+              <button type="button" className="mobile_navigation_close" aria-label="Close site menu">×</button>
+            </Dialog.Close>
+          </div>
+          <nav className="mob_nav_parent" aria-label="Mobile navigation">
+            {loading ? <p className="text-[color:var(--text-muted)]">Loading navigation…</p> : (
+              <>
+                {navigationItems.filter((item) => !item.buttonToggle).map((item) => {
+                  const url = destinationFor(item)
+                  const external = url.startsWith('http')
+                  return (
+                    <Link
+                      key={item.id}
+                      href={url}
+                      target={external ? '_blank' : undefined}
+                      rel={external ? 'noreferrer' : undefined}
+                      onClick={() => setOpen(false)}
+                      className="mob_nav_link roboto-condensed-regular no_underline"
+                    >
+                      <span>{item.title}</span>
+                      <span aria-hidden="true">{external ? '↗' : '→'}</span>
+                    </Link>
+                  )
+                })}
+                {buttonItem ? <NavEleBtn navItem={buttonItem} onNavigate={() => setOpen(false)} /> : null}
+              </>
+            )}
+          </nav>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
-
-// Pages that live in this app but aren't in the CMS navigation yet. Merged in
-// client-side (before the button item) so they appear without a CMS release.
-const LOCAL_NAV_ITEMS = [
-  { id: 'local-records', title: 'Records', buttonToggle: false, hyperlink: { url: '/records' }, navigationIcon: [] },
-  { id: 'local-story', title: 'Our Story', buttonToggle: false, hyperlink: { url: '/about' }, navigationIcon: [] },
-]
 
 export default function HeaderNavPanel() {
   const headerRef = useRef(null)
-  const [bgColor, setBgColor] = useState('unset')
   const [navigationItems, setNavigationItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchNavigation = async () => {
+    async function fetchNavigation() {
       try {
-        const query = getNavigationConfig()
-        const data = await fetchGraphQL(query)
-
-        if (data && data.entries) {
-          const items = [...data.entries]
-          // LOG IN comes mid-list from the CMS; the club wants it as the last tab.
-          const loginIdx = items.findIndex(
-            (i) => !i.buttonToggle && /log\s*-?\s*in/i.test(i.title || '')
-          )
-          const login = loginIdx >= 0 ? items.splice(loginIdx, 1)[0] : null
-          const firstBtn = items.findIndex((i) => i.buttonToggle)
-          const at = firstBtn === -1 ? items.length : firstBtn
-          items.splice(at, 0, ...LOCAL_NAV_ITEMS, ...(login ? [login] : []))
-          setNavigationItems(items)
-        } else {
-          throw new Error('No navigation data returned from API')
-        }
+        const data = await fetchGraphQL(getNavigationConfig())
+        if (!data?.entries) throw new Error('No navigation data returned from API')
+        setNavigationItems(buildNavigationItems(data.entries))
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
+        setNavigationItems(buildNavigationItems([]))
       } finally {
         setLoading(false)
       }
     }
-
     fetchNavigation()
   }, [])
 
   useEffect(() => {
     const handleScroll = () => {
-      const elmnt = headerRef.current
-
-      if (elmnt && window.scrollY > elmnt.offsetHeight && window.innerWidth > 1024) {
-        elmnt.classList.add('active_header')
-      } else if (elmnt) {
-        setBgColor('unset')
-        elmnt.classList.remove('active_header')
-      }
+      const element = headerRef.current
+      if (!element) return
+      element.classList.toggle('active_header', window.scrollY > element.offsetHeight && window.innerWidth > 1024)
     }
-
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const getFullUrl = (url) => {
-    const local = localizeUrl(url)
-    if (local?.startsWith('http')) return local
-    if (local?.startsWith('/')) return local
-    return `/${local}`
-  }
-
-  const buttonItem = navigationItems.find((item) => item.buttonToggle)
-
   return (
     <>
-      <header ref={headerRef} className="main_header base_paddings" style={{ backgroundColor: bgColor }}>
+      <header ref={headerRef} className="main_header base_paddings">
         <div className="center_aligned flex_grid">
           <LogoContainer href="/" className="site_logo" imageUrl="logo.png" />
-          {loading ? (
-            <></>
-          ) : error ? (
-            <div>Error loading navigation: {error}</div>
-          ) : (
-            <NavContainer navigationItems={navigationItems} />
-          )}
+          {loading ? null : <NavContainer navigationItems={navigationItems} />}
+          {error ? <span className="sr-only">The live menu could not load; local navigation is available.</span> : null}
           <ThemeToggle />
-          <MobileNav />
+          <MobileNavigation navigationItems={navigationItems} loading={loading} />
         </div>
       </header>
-
-      <div id="mobileNav_ref" className="mobile_navigation">
-        <div className="mob_nav_parent">
-          {loading ? (
-            <></>
-          ) : error ? (
-            <></>
-          ) : (
-            <>
-              {navigationItems
-                .filter((item) => !item.buttonToggle)
-                .map((item) => (
-                  <div key={item.id} className="mob_nav_ele">
-                    <Link
-                      href={getFullUrl(item.hyperlink.url)}
-                      target={getFullUrl(item.hyperlink.url).startsWith('http') ? '_blank' : undefined}
-                      className="roboto-condensed-regular no_underline p2 white_color"
-                    >
-                      {item.title}
-                    </Link>
-                  </div>
-                ))}
-              {buttonItem && (
-                <div className="mob_nav_ele_btn">
-                  <button className="nav_ele_btn roboto-condensed-med p2">
-                    <Link href={getFullUrl(buttonItem.hyperlink.url)} className="roboto-condensed-regular no_underline p2">
-                      {buttonItem.title}
-                    </Link>
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
     </>
   )
 }
