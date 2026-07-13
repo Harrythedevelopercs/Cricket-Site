@@ -15,13 +15,19 @@ export function Skel({
   return <div className={`ccc-skel ${className}`} style={style} aria-hidden="true" />;
 }
 
-/* One player tile — mirrors PlayerCardEle (image area + action bar + info panel). */
+/* One player tile — mirrors the compact directory card. */
 export function PlayerCardSkeleton() {
   return (
-    <div className="playerCardEle">
-      <Skel className="w-full aspect-[500/392] !rounded-none" />
-      <Skel className="w-full h-[7vw] lg:h-[2.2vw] !rounded-none" style={{ marginTop: 2 }} />
-      <Skel className="w-full aspect-[284/228] !rounded-none" style={{ marginTop: 2 }} />
+    <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--panel-line)] bg-[var(--panel)]">
+      <Skel className="aspect-square w-full !rounded-none" />
+      <div className="p-3.5 lg:p-5">
+        <Skel className="h-5 w-3/4" />
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[var(--panel-line)] pt-3">
+          <Skel className="h-8 w-full" />
+          <Skel className="h-8 w-full" />
+          <Skel className="h-8 w-full" />
+        </div>
+      </div>
     </div>
   );
 }
