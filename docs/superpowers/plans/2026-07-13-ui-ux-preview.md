@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Tailwind utility classes, existing CSS design tokens, Radix UI Dialog, Node test runner through `tsx`, Chrome DevTools, Cloudflare Quick Tunnel.
 
+**Revision (2026-07-13):** At the user’s request, Task 4’s tournament-detail redesign was rolled back to the exact `main` implementation. All other preview tasks remain in place.
+
 ---
 
 ### Task 1: Tested player privacy and discovery model
