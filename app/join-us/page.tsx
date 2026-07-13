@@ -3,13 +3,14 @@
 export const dynamic = "force-dynamic";
 
 import React, { FormEvent, useRef, useState } from "react";
-import { sendForm } from "emailjs-com";
+import { send } from "emailjs-com";
 import Image from "next/image";
 import Link from "next/link";
 import { usePageTitle } from "../lib/usePageTitle";
+import { buildJoinTemplateParams } from "./templateParams";
 
-// Field name attributes are the EmailJS template params (template_hr5t6cq) —
-// do not rename them: full_name, email, telphone, age, gender, club_id, bio.
+// EmailJS receives explicit parameters from buildJoinTemplateParams, including legacy
+// aliases used by template_hr5t6cq and a complete fallback `message` value.
 
 type FormStatus = "idle" | "sending" | "success" | "error";
 
@@ -73,10 +74,20 @@ export default function JoinUsPage() {
     setValidationMsg(null);
     setStatus("sending");
 
-    sendForm(
+    const templateParams = buildJoinTemplateParams({
+      fullName: name,
+      email,
+      phone: String(data.get("phone") ?? ""),
+      age: String(data.get("age") ?? ""),
+      gender: String(data.get("gender") ?? ""),
+      clubId: String(data.get("club_id") ?? ""),
+      bio: String(data.get("bio") ?? ""),
+    });
+
+    send(
       "service_13kiadg", // EmailJS service ID (unchanged)
       "template_hr5t6cq", // EmailJS template ID (unchanged)
-      form.current,
+      templateParams,
       "It3y6Vk01CcKyFTFD" // EmailJS public key (unchanged)
     ).then(
       (result) => {
@@ -259,7 +270,7 @@ export default function JoinUsPage() {
                     <input
                       id="ju-phone"
                       type="tel"
-                      name="telphone"
+                      name="phone"
                       autoComplete="tel"
                       placeholder="888 888 8888"
                       className={fieldCls}

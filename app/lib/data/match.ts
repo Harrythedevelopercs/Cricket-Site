@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
 import { getScoreCard } from "../cricclubs/endpoints";
+import { formatDismissal } from "./scorecardText";
 
 const IMG = "https://media.cricclubs.com";
 const img = (p?: string | null) =>
@@ -75,7 +76,8 @@ function shapeInnings(inn: Row | undefined) {
       return {
         name: fullName(b.firstName, b.lastName),
         dismissal:
-          str(b.outStringNoLink) || (str(b.isOut) === "1" ? "out" : "not out"),
+          formatDismissal(b.outStringNoLink) ||
+          (str(b.isOut) === "1" ? "out" : "not out"),
         notOut: str(b.isOut) === "0",
         runs,
         balls,
