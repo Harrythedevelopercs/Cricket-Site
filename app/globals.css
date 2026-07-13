@@ -4725,10 +4725,67 @@ header.main_header a.nav_ele_btn:hover {
   box-shadow: 0 8px 22px rgba(244, 122, 42, 0.32);
 }
 
+header.main_header nav.nav_container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(14px, 1.45vw, 28px);
+  margin: auto 18px auto auto;
+}
+header.main_header nav.nav_container .nav_ele { flex: none; }
+header.main_header nav.nav_container .nav_eleIco { display: none; }
+.nav_more_trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.82;
+}
+.nav_more_trigger:hover,
+.nav_more_trigger[data-state="open"] { color: var(--orange); opacity: 1; }
+.nav_more_content {
+  z-index: 100002;
+  width: min(280px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--panel-line-strong);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--ink-2) 96%, transparent);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  animation: ccc-overlay-in 0.18s ease-out;
+}
+.nav_more_list { display: grid; }
+.nav_more_content .nav_ele {
+  display: block;
+  border-bottom: 1px solid var(--panel-line);
+}
+.nav_more_content .nav_ele:last-child { border-bottom: 0; }
+.nav_more_content .nav_ele_text a {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 10px;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-transform: none;
+}
+.nav_more_content .nav_ele_text a:hover { color: var(--orange); }
+.nav_more_content .nav_eleIco { display: none; }
+.nav_more_arrow { fill: var(--panel-line-strong); }
+:root[data-theme="light"] .nav_more_content { background: rgba(255, 255, 255, 0.98); }
+
 .mobile_navigation_overlay,
 .mobile_navigation { display: none; }
 
 @media (max-width: 1024px) {
+  header.main_header nav.nav_container { display: none; }
   .nav_burger {
     appearance: none;
     border: 0;

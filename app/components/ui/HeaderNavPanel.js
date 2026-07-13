@@ -1,6 +1,7 @@
 "use client"
 
 import * as Dialog from '@radix-ui/react-dialog'
+import * as Popover from '@radix-ui/react-popover'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -67,11 +68,30 @@ function NavEleBtn({ navItem, onNavigate }) {
 }
 
 function NavContainer({ navigationItems }) {
+  const buttonItem = navigationItems.find((item) => item.buttonToggle)
+  const links = navigationItems.filter((item) => !item.buttonToggle)
+  const direct = links.filter((item) => /^(schedule|tournaments|players|records|match reports|gallery)$/i.test(item.title))
+  const more = links.filter((item) => !direct.includes(item))
+
   return (
     <nav className="nav_container flex_grid" aria-label="Primary navigation">
-      {navigationItems.map((item) =>
-        item.buttonToggle ? <NavEleBtn key={item.id} navItem={item} /> : <NavEle key={item.id} navItem={item} />
-      )}
+      {direct.map((item) => <NavEle key={item.id} navItem={item} />)}
+      {more.length ? (
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <button type="button" className="nav_more_trigger" aria-label="Open more navigation links">More <span aria-hidden="true">⌄</span></button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content className="nav_more_content" sideOffset={12} align="end">
+              <nav aria-label="More club links" className="nav_more_list">
+                {more.map((item) => <NavEle key={item.id} navItem={item} />)}
+              </nav>
+              <Popover.Arrow className="nav_more_arrow" />
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      ) : null}
+      {buttonItem ? <NavEleBtn navItem={buttonItem} /> : null}
     </nav>
   )
 }
