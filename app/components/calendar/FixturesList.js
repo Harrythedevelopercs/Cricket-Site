@@ -194,12 +194,15 @@ function AddToCalendar({ entry, isOpen, onToggle, onClose }) {
     <div className="relative" data-cal-menu>
       <button
         type="button"
-        className="ccc-btn ccc-btn-ghost !px-[3.4vw] !py-[1.9vw] !text-[3vw] lg:!px-[0.9vw] lg:!py-[0.45vw] lg:!text-[0.72rem]"
+        className="ccc-btn ccc-btn-ghost !px-[3.4vw] !py-[1.9vw] !text-[3.4vw] lg:!px-[0.9vw] lg:!py-[0.45vw] lg:!text-[0.72rem]"
         aria-haspopup="menu"
         aria-expanded={isOpen}
+        aria-label="Add to calendar"
         onClick={onToggle}
       >
-        <span aria-hidden="true">+</span> Add to calendar
+        {/* Icon-only on phones — the full label dominated every fixture row. */}
+        <span aria-hidden="true">+&#xFE0E;&thinsp;📅</span>
+        <span className="hidden sm:inline">&nbsp;Add to calendar</span>
       </button>
 
       {isOpen && (
@@ -233,8 +236,18 @@ function AddToCalendar({ entry, isOpen, onToggle, onClose }) {
   )
 }
 
+// Google Maps search for a ground; roster notes like "(Need Spring Stumps)" are
+// stripped so the query stays a findable place name.
+function groundMapsUrl(ground) {
+  const query = (ground || '').replace(/\([^)]*\)/g, '').trim()
+  return query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : null
+}
+
 function FixtureRow({ entry, fmt, isMenuOpen, onMenuToggle, onMenuClose }) {
   const opponent = opponentOf(entry)
+  const mapsUrl = groundMapsUrl(entry.groundsName)
 
   return (
     <li className="flex flex-wrap items-center gap-x-[4vw] gap-y-[2.5vw] px-[4vw] py-[4.5vw] lg:gap-x-[1.4vw] lg:gap-y-3 lg:px-[1.6vw] lg:py-[1.15vw]">
@@ -257,7 +270,19 @@ function FixtureRow({ entry, fmt, isMenuOpen, onMenuToggle, onMenuClose }) {
             {opponent.name}
           </p>
           <p className="text-muted p6 mt-1 truncate">
-            {entry.groundsName || 'Ground TBC'}
+            {mapsUrl ? (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[color:var(--panel-line-strong)] underline-offset-2 transition-colors hover:text-[color:var(--orange)] hover:decoration-[color:var(--orange)]"
+              >
+                {entry.groundsName}
+                <span className="sr-only"> (opens Google Maps in a new tab)</span>
+              </a>
+            ) : (
+              'Ground TBC'
+            )}
             <span className="text-dim"> · </span>
             {fmt.time || 'Start time TBC'}
           </p>
