@@ -108,10 +108,19 @@ const SERIES_STYLE = [
 const niceStep = (max: number, steps: number[], targetTicks: number) =>
   steps.find((s) => max / s <= targetTicks) ?? steps[steps.length - 1];
 
+interface ActiveDot {
+  px: number;
+  py: number;
+  label: string;
+  team: string;
+  stroke: string;
+}
+
 /** Both innings' runs-vs-overs lines on one labeled axis pair (the match "worm"). */
 function WormChart({ innings }: { innings: Innings[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  const [active, setActive] = useState<ActiveDot | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -123,6 +132,9 @@ function WormChart({ innings }: { innings: Innings[] }) {
     setWidth(Math.floor(el.getBoundingClientRect().width));
     return () => ro.disconnect();
   }, []);
+
+  // Dot positions are in pixels, so a resize invalidates the anchored tooltip.
+  useEffect(() => setActive(null), [width]);
 
   const series = innings
     .map((inn, index) => {
@@ -195,9 +207,15 @@ function WormChart({ innings }: { innings: Innings[] }) {
           })}
         </div>
       </div>
-      <div ref={containerRef}>
+      <div ref={containerRef} className="relative">
         {width > 80 ? (
-          <svg width={width} height={H} role="img" aria-label={`Run progression by overs: ${summary}. Dots mark each fall of wickets.`}>
+          <svg
+            width={width}
+            height={H}
+            role="img"
+            aria-label={`Run progression by overs: ${summary}. Dots mark each fall of wickets.`}
+            onClick={() => setActive(null)}
+          >
             {yTicks.map((v) => (
               <g key={`y${v}`}>
                 <line
@@ -234,13 +252,37 @@ function WormChart({ innings }: { innings: Innings[] }) {
               return (
                 <g key={`s${s.index}`}>
                   <path d={d} fill="none" stroke={style.stroke} strokeWidth={2} strokeLinejoin="round" strokeDasharray={style.dash} />
-                  {s.pts.map((p) => (
-                    <g key={p.label}>
-                      <circle cx={sx(p.x)} cy={sy(p.y)} r={13} fill="transparent" />
-                      <circle cx={sx(p.x)} cy={sy(p.y)} r={4.5} fill={style.stroke} stroke="var(--panel)" strokeWidth={2} />
-                      <title>{p.label}</title>
-                    </g>
-                  ))}
+                  {s.pts.map((p) => {
+                    const dot: ActiveDot = {
+                      px: sx(p.x),
+                      py: sy(p.y),
+                      label: p.label,
+                      team: s.name,
+                      stroke: style.stroke,
+                    };
+                    return (
+                      <g key={p.label}>
+                        <circle cx={dot.px} cy={dot.py} r={4.5} fill={style.stroke} stroke="var(--panel)" strokeWidth={2} />
+                        <circle
+                          cx={dot.px}
+                          cy={dot.py}
+                          r={15}
+                          fill="transparent"
+                          className="cursor-pointer focus:outline-none"
+                          tabIndex={0}
+                          aria-label={`${s.name}: ${p.label}`}
+                          onMouseEnter={() => setActive(dot)}
+                          onMouseLeave={() => setActive(null)}
+                          onFocus={() => setActive(dot)}
+                          onBlur={() => setActive(null)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setActive((current) => (current?.label === dot.label && current?.team === dot.team ? null : dot));
+                          }}
+                        />
+                      </g>
+                    );
+                  })}
                 </g>
               );
             })}
@@ -249,7 +291,29 @@ function WormChart({ innings }: { innings: Innings[] }) {
                 {l.total}/{l.wickets}
               </text>
             ))}
+            {active ? (
+              <circle cx={active.px} cy={active.py} r={7.5} fill={active.stroke} stroke="var(--panel)" strokeWidth={2.5} pointerEvents="none" />
+            ) : null}
           </svg>
+        ) : null}
+        {active ? (
+          <div
+            className="pointer-events-none absolute z-10 rounded-[var(--radius-sm)] border border-[var(--panel-line-strong)] bg-[var(--panel-2)] px-3 py-2 shadow-xl"
+            style={{
+              left: Math.min(Math.max(active.px, 90), Math.max(width - 90, 90)),
+              top: active.py - 12,
+              transform: "translate(-50%, -100%)",
+            }}
+            role="status"
+          >
+            <p className="flex items-center gap-1.5 whitespace-nowrap text-[0.66rem] font-semibold uppercase tracking-wide text-[color:var(--text-dim)]">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: active.stroke }} />
+              {active.team}
+            </p>
+            <p className="roboto-condensed-bold whitespace-nowrap text-[0.88rem] text-[color:var(--text)]">
+              {active.label}
+            </p>
+          </div>
         ) : null}
       </div>
       <p className="mt-1 text-[0.66rem] text-[color:var(--text-dim)] lg:text-[0.72rem]">
