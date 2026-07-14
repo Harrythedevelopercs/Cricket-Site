@@ -80,6 +80,13 @@ export default function Page() {
           <div className="flex flex-wrap items-center justify-between gap-[4vw] lg:gap-[1vw] mb-[5vw] lg:mb-[1.6vw]">
             <SectionTitleEle>Fixtures</SectionTitleEle>
 
+            <a
+              href="/api/calendar"
+              className="order-3 inline-flex items-center gap-2 rounded-full border border-[color:var(--panel-line-strong)] px-[4.5vw] py-[1.8vw] text-[3vw] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)] transition-colors hover:border-[var(--orange)] hover:text-[color:var(--orange)] lg:order-none lg:px-[1.2vw] lg:py-[0.5vw] lg:text-[0.75rem]"
+            >
+              <span aria-hidden="true">📅</span> Add to calendar (.ics)
+            </a>
+
             <div
               role="tablist"
               aria-label="Fixtures view"
