@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 // by /api/records. Client-fetch pattern matches app/players/page.tsx.
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Skel } from '../components/skeletons/PageSkeletons'
@@ -64,7 +65,10 @@ function LeaderTable({
       ) : (
         <>
           {/* Featured #1 */}
-          <div className="flex items-center gap-[4vw] lg:gap-[1vw] pb-[4vw] lg:pb-[1.1vw] mb-[3vw] lg:mb-[1vw] border-b border-[var(--panel-line)]">
+          <Link
+            href={`/players/${leaders[0].playerId}`}
+            className="group flex items-center gap-[4vw] lg:gap-[1vw] pb-[4vw] lg:pb-[1.1vw] mb-[3vw] lg:mb-[1vw] border-b border-[var(--panel-line)]"
+          >
             <div className="relative w-[16vw] h-[16vw] lg:w-[4vw] lg:h-[4vw] rounded-full overflow-hidden ring-2 ring-[var(--orange)] shrink-0 bg-[var(--panel-2)]">
               <Image
                 src={leaders[0].pic || FALLBACK_PIC}
@@ -76,7 +80,7 @@ function LeaderTable({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="roboto-condensed-bold text-[color:var(--text)] text-[4.2vw] lg:text-[1.15vw] truncate">
+              <p className="roboto-condensed-bold text-[color:var(--text)] text-[4.2vw] lg:text-[1.15vw] truncate group-hover:text-[color:var(--orange)] transition-colors">
                 {leaders[0].name}
               </p>
               <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3vw] lg:text-[0.8vw]">
@@ -91,36 +95,41 @@ function LeaderTable({
                 {unit}
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Ranks 2–8 */}
           <ul className="flex flex-col gap-[2.5vw] lg:gap-[0.7vw]">
             {leaders.slice(1).map((p, i) => (
-              <li key={p.playerId} className="flex items-center gap-[3vw] lg:gap-[0.8vw]">
-                <span className="roboto-condensed-bold text-[color:var(--text-dim)] w-[5vw] lg:w-[1.4vw] text-center text-[3.2vw] lg:text-[0.9vw]">
-                  {i + 2}
-                </span>
-                <div className="relative w-[9vw] h-[9vw] lg:w-[2.2vw] lg:h-[2.2vw] rounded-full overflow-hidden shrink-0 bg-[var(--panel-2)]">
-                  <Image
-                    src={p.pic || FALLBACK_PIC}
-                    alt={p.name}
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="roboto-condensed-med text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.95vw] truncate">
-                    {p.name}
+              <li key={p.playerId}>
+                <Link
+                  href={`/players/${p.playerId}`}
+                  className="group flex items-center gap-[3vw] lg:gap-[0.8vw]"
+                >
+                  <span className="roboto-condensed-bold text-[color:var(--text-dim)] w-[5vw] lg:w-[1.4vw] text-center text-[3.2vw] lg:text-[0.9vw]">
+                    {i + 2}
+                  </span>
+                  <div className="relative w-[9vw] h-[9vw] lg:w-[2.2vw] lg:h-[2.2vw] rounded-full overflow-hidden shrink-0 bg-[var(--panel-2)]">
+                    <Image
+                      src={p.pic || FALLBACK_PIC}
+                      alt={p.name}
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="roboto-condensed-med text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.95vw] truncate group-hover:text-[color:var(--orange)] transition-colors">
+                      {p.name}
+                    </p>
+                    <p className="roboto-condensed-regular text-[color:var(--text-dim)] text-[2.5vw] lg:text-[0.7vw]">
+                      {seasonsLabel(p.seasons)}
+                    </p>
+                  </div>
+                  <p className="ds-num text-[color:var(--text)] text-[3.8vw] lg:text-[1.05vw]">
+                    {p.value.toLocaleString()}
                   </p>
-                  <p className="roboto-condensed-regular text-[color:var(--text-dim)] text-[2.5vw] lg:text-[0.7vw]">
-                    {seasonsLabel(p.seasons)}
-                  </p>
-                </div>
-                <p className="ds-num text-[color:var(--text)] text-[3.8vw] lg:text-[1.05vw]">
-                  {p.value.toLocaleString()}
-                </p>
+                </Link>
               </li>
             ))}
           </ul>
@@ -163,9 +172,18 @@ function SeasonCard({ s }: { s: SeasonBests }) {
                 <p className="roboto-condensed-bold uppercase tracking-wider text-[color:var(--text-dim)] text-[2.6vw] lg:text-[0.66vw]">
                   {r.label}
                 </p>
-                <p className="roboto-condensed-med text-[color:var(--text-muted)] text-[3.3vw] lg:text-[0.88vw] truncate">
-                  {r.item ? r.item.name : 'Not recorded'}
-                </p>
+                {r.item ? (
+                  <Link
+                    href={`/players/${r.item.playerId}`}
+                    className="roboto-condensed-med block truncate text-[color:var(--text-muted)] text-[3.3vw] lg:text-[0.88vw] transition-colors hover:text-[color:var(--orange)]"
+                  >
+                    {r.item.name}
+                  </Link>
+                ) : (
+                  <p className="roboto-condensed-med text-[color:var(--text-muted)] text-[3.3vw] lg:text-[0.88vw] truncate">
+                    Not recorded
+                  </p>
+                )}
               </div>
               <p className="ds-num text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw] leading-none shrink-0">
                 {r.item ? (r.fmt ? r.fmt(r.item.value) : r.item.value.toLocaleString()) : '—'}
@@ -181,7 +199,10 @@ function SeasonCard({ s }: { s: SeasonBests }) {
 /* One milestone pill in the strip. */
 function MilestonePill({ m }: { m: MilestoneEntry }) {
   return (
-    <div className="flex items-center gap-[3vw] lg:gap-[0.8vw] rounded-full border border-[var(--panel-line)] bg-[var(--panel)] py-[1.5vw] pl-[2vw] pr-[4.5vw] lg:py-[0.4vw] lg:pl-[0.5vw] lg:pr-[1.2vw]">
+    <Link
+      href={`/players/${m.playerId}`}
+      className="group flex items-center gap-[3vw] lg:gap-[0.8vw] rounded-full border border-[var(--panel-line)] bg-[var(--panel)] py-[1.5vw] pl-[2vw] pr-[4.5vw] lg:py-[0.4vw] lg:pl-[0.5vw] lg:pr-[1.2vw] transition-colors hover:border-[var(--orange)]"
+    >
       <div className="relative w-[9vw] h-[9vw] lg:w-[2.2vw] lg:h-[2.2vw] rounded-full overflow-hidden shrink-0 bg-[var(--panel-2)]">
         <Image
           src={m.pic || FALLBACK_PIC}
@@ -203,7 +224,7 @@ function MilestonePill({ m }: { m: MilestoneEntry }) {
       <p className="ds-num text-[color:var(--text)] text-[4.2vw] lg:text-[1.1vw] pl-[2vw] lg:pl-[0.6vw] shrink-0">
         {m.total.toLocaleString()}
       </p>
-    </div>
+    </Link>
   )
 }
 

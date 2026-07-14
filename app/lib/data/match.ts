@@ -74,6 +74,7 @@ function shapeInnings(inn: Row | undefined) {
       const runs = num(b.runsScored);
       const balls = num(b.ballsFaced);
       return {
+        playerId: num(b.playerID),
         name: fullName(b.firstName, b.lastName),
         dismissal:
           formatDismissal(b.outStringNoLink) ||
@@ -90,6 +91,7 @@ function shapeInnings(inn: Row | undefined) {
       const balls = num(b.balls);
       const runs = num(b.runs);
       return {
+        playerId: num(b.playerID),
         name: fullName(b.firstName, b.lastName),
         overs: str(b.overs) || oversFromBalls(balls),
         maidens: num(b.maidens),
@@ -131,6 +133,32 @@ async function buildMatchCard(matchId: number) {
   const innings = [sc?.innings1, sc?.innings2, sc?.innings3, sc?.innings4]
     .map((i) => shapeInnings(i as Row | undefined))
     .filter((i): i is NonNullable<typeof i> => i !== null);
+
+  // Only CCC roster members have profile pages, so keep playerId solely for rows
+  // whose id exists in our Player mirror; everyone else renders as plain text.
+  const scorecardIds = new Set<number>();
+  for (const inn of innings) {
+    inn.batting.forEach((b) => b.playerId && scorecardIds.add(b.playerId));
+    inn.bowling.forEach((b) => b.playerId && scorecardIds.add(b.playerId));
+  }
+  const knownIds = scorecardIds.size
+    ? new Set(
+        (
+          await prisma.player.findMany({
+            where: { id: { in: [...scorecardIds] } },
+            select: { id: true },
+          })
+        ).map((p) => p.id)
+      )
+    : new Set<number>();
+  for (const inn of innings) {
+    inn.batting.forEach((b) => {
+      if (!knownIds.has(b.playerId)) b.playerId = 0;
+    });
+    inn.bowling.forEach((b) => {
+      if (!knownIds.has(b.playerId)) b.playerId = 0;
+    });
+  }
 
   const teamOne =
     dbMatch?.teamOneName || innings[0]?.teamName || "Team 1";
