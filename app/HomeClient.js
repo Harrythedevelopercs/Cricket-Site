@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState, Fragment } from "react";
 import HeroBanner from "./components/ui/HeroBanner";
 import RecentResults from "./components/ui/RecentResults";
@@ -20,40 +18,49 @@ import { getHomePageQuery } from "./lib/queries/homePageQuery";
 import PageTransition from "./components/ui/PageTransition";
 import HeroBannerSkeleton from "./components/skeletons/HeroBannerSkeleton";
 
-const HomePageContent = () => {
-  const [pageData, setPageData] = useState(null);
+const HomePageContent = ({ initialPageData, initialFixtures, initialResults, initialReports }) => {
+  const [pageData, setPageData] = useState(initialPageData);
   const [error, setError] = useState(null);
   // Upcoming fixtures + recent results come from the local DB (Neon); editorial stays on the CMS.
-  const [dbFixtures, setDbFixtures] = useState(null);
-  const [recentResults, setRecentResults] = useState(null);
-  const [matchReports, setMatchReports] = useState(null);
+  const [dbFixtures, setDbFixtures] = useState(initialFixtures);
+  const [recentResults, setRecentResults] = useState(initialResults);
+  const [matchReports, setMatchReports] = useState(initialReports);
 
+  // The server page passes each dataset when its source answered; anything it
+  // could not load (null) is retried here so a transient hiccup self-heals.
   useEffect(() => {
-    const query = getHomePageQuery();
-    fetchGraphQL(query)
-      .then((data) => {
-        setPageData(data);
-      })
-      .catch((err) => {
-        console.error("Error fetching data from Craft CMS:", err);
-        setError(err.message);
-      });
+    if (initialPageData === null) {
+      fetchGraphQL(getHomePageQuery())
+        .then((data) => {
+          setPageData(data);
+        })
+        .catch((err) => {
+          console.error("Error fetching data from Craft CMS:", err);
+          setError(err.message);
+        });
+    }
 
-    fetch("/api/schedule")
-      .then((r) => r.json())
-      .then((d) => setDbFixtures(d.entries || []))
-      .catch(() => setDbFixtures([]));
+    if (initialFixtures === null) {
+      fetch("/api/schedule")
+        .then((r) => r.json())
+        .then((d) => setDbFixtures(d.entries || []))
+        .catch(() => setDbFixtures([]));
+    }
 
-    fetch("/api/recent-results")
-      .then((r) => r.json())
-      .then((d) => setRecentResults(d.results || []))
-      .catch(() => setRecentResults([]));
+    if (initialResults === null) {
+      fetch("/api/recent-results")
+        .then((r) => r.json())
+        .then((d) => setRecentResults(d.results || []))
+        .catch(() => setRecentResults([]));
+    }
 
-    fetch("/api/match-reports?limit=3")
-      .then((r) => r.json())
-      .then((d) => setMatchReports(d.reports || []))
-      .catch(() => setMatchReports([]));
-  }, []);
+    if (initialReports === null) {
+      fetch("/api/match-reports?limit=3")
+        .then((r) => r.json())
+        .then((d) => setMatchReports(d.reports || []))
+        .catch(() => setMatchReports([]));
+    }
+  }, [initialPageData, initialFixtures, initialResults, initialReports]);
 
   if (error) {
     return <div className="error-message">Error loading content: {error}</div>;
@@ -117,11 +124,21 @@ const HomePageContent = () => {
   return renderComponents();
 };
 
-export default function Home() {
+export default function HomeClient({
+  initialPageData = null,
+  initialFixtures = null,
+  initialResults = null,
+  initialReports = null,
+}) {
   return (
     <PageTransition>
       <section className="w-full h-full bg-repeat-y bg-[100%]">
-        <HomePageContent />
+        <HomePageContent
+          initialPageData={initialPageData}
+          initialFixtures={initialFixtures}
+          initialResults={initialResults}
+          initialReports={initialReports}
+        />
       </section>
     </PageTransition>
   );
