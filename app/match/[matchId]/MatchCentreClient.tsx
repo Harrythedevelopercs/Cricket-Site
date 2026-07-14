@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MatchCentreSkeleton } from "../../components/skeletons/PageSkeletons";
@@ -96,90 +96,165 @@ function parseOvers(o: string): number | null {
   return Number(m[1]) + (m[2] ? Number(m[2]) / 6 : 0);
 }
 
-/** Runs-vs-overs line through each fall of wickets; the FoW text above it is the data in full. */
-function FowChart({ inn }: { inn: Innings }) {
-  const pts = inn.fallOfWickets
-    .map((f) => ({
-      x: parseOvers(f.over),
-      y: f.runs,
-      label: `${f.wicket}-${f.runs} ${f.player}${f.over ? ` (${f.over} ov)` : ""}`,
-    }))
-    .filter((p): p is { x: number; y: number; label: string } => p.x !== null)
-    .sort((a, b) => a.x - b.x);
-  if (pts.length === 0) return null;
+// Series styles in fixed order; 3rd/4th innings (rare) reuse the hues with a dash
+// so identity never rests on color alone.
+const SERIES_STYLE = [
+  { stroke: "var(--chart-1)", dash: undefined },
+  { stroke: "var(--chart-2)", dash: undefined },
+  { stroke: "var(--chart-1)", dash: "6 4" },
+  { stroke: "var(--chart-2)", dash: "6 4" },
+];
 
-  const last = pts[pts.length - 1];
-  const endX = Math.max(parseOvers(inn.overs) ?? last.x, last.x);
-  const xMax = endX || 1;
-  const yMax = Math.max(inn.total, ...pts.map((p) => p.y)) || 1;
-  const W = 600;
-  const H = 170;
-  const PAD = 12;
-  const sx = (x: number) => PAD + (x / xMax) * (W - 2 * PAD);
-  const sy = (y: number) => H - PAD - (y / yMax) * (H - 2 * PAD);
+const niceStep = (max: number, steps: number[], targetTicks: number) =>
+  steps.find((s) => max / s <= targetTicks) ?? steps[steps.length - 1];
 
-  // Close the line at the innings total unless the last wicket already is it.
-  const lineEnd =
-    endX > last.x || inn.total > last.y ? [{ x: endX, y: inn.total }] : [];
-  const linePts = [{ x: 0, y: 0 }, ...pts, ...lineEnd];
-  const linePath = linePts.map((p, i) => `${i === 0 ? "M" : "L"}${sx(p.x)},${sy(p.y)}`).join(" ");
-  const areaPath = `${linePath} L${sx(linePts[linePts.length - 1].x)},${sy(0)} L${sx(0)},${sy(0)} Z`;
+/** Both innings' runs-vs-overs lines on one labeled axis pair (the match "worm"). */
+function WormChart({ innings }: { innings: Innings[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) =>
+      setWidth(Math.floor(entries[0].contentRect.width))
+    );
+    ro.observe(el);
+    setWidth(Math.floor(el.getBoundingClientRect().width));
+    return () => ro.disconnect();
+  }, []);
+
+  const series = innings
+    .map((inn, index) => {
+      const pts = inn.fallOfWickets
+        .map((f) => ({
+          x: parseOvers(f.over),
+          y: f.runs,
+          label: `${f.wicket}-${f.runs} ${f.player}${f.over ? ` (${f.over} ov)` : ""}`,
+        }))
+        .filter((p): p is { x: number; y: number; label: string } => p.x !== null)
+        .sort((a, b) => a.x - b.x);
+      const lastX = pts.length ? pts[pts.length - 1].x : 0;
+      const endX = Math.max(parseOvers(inn.overs) ?? 0, lastX);
+      return { name: inn.teamName, total: inn.total, wickets: inn.wickets, pts, endX, index };
+    })
+    .filter((s) => s.endX > 0);
+  if (series.length === 0) return null;
+
+  const xMax = Math.max(...series.map((s) => s.endX));
+  const yTop = Math.max(1, ...series.map((s) => Math.max(s.total, ...s.pts.map((p) => p.y))));
+  const yStep = niceStep(yTop, [5, 10, 20, 25, 50, 100, 200], 5);
+  const yMax = Math.ceil(yTop / yStep) * yStep;
+  const xStep = niceStep(xMax, [1, 2, 5, 10, 20], 8);
+
+  const H = 252;
+  const M = { top: 28, right: 48, bottom: 26, left: 36 };
+  const iw = width - M.left - M.right;
+  const ih = H - M.top - M.bottom;
+  const sx = (x: number) => M.left + (x / xMax) * iw;
+  const sy = (y: number) => M.top + ih - (y / yMax) * ih;
+
+  const yTicks: number[] = [];
+  for (let v = 0; v <= yMax; v += yStep) yTicks.push(v);
+  const xTicks: number[] = [];
+  for (let v = 0; v <= Math.floor(xMax); v += xStep) xTicks.push(v);
+
+  // Direct end labels; nudge apart when the two totals land too close.
+  const endLabels = series.map((s) => ({ ...s, ly: sy(s.total) }));
+  endLabels
+    .slice()
+    .sort((a, b) => a.ly - b.ly)
+    .forEach((l, i, arr) => {
+      if (i > 0 && l.ly - arr[i - 1].ly < 14) l.ly = arr[i - 1].ly + 14;
+    });
+
+  const summary = series
+    .map((s) => `${s.name} ${s.total}/${s.wickets}`)
+    .join("; ");
 
   return (
-    <div className="mt-[3vw] lg:mt-[0.9vw]">
-      <div className="flex items-baseline justify-between">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-wide text-[color:var(--text-dim)] lg:text-[0.7rem]">
-          Wicket progression
-        </p>
-        <p className="text-[0.62rem] text-[color:var(--text-dim)] lg:text-[0.7rem]">runs · overs</p>
+    <div className="ccc-card mb-[6vw] rounded-[3vw] border border-[var(--panel-line)] bg-[var(--panel)] p-[4vw] lg:mb-[2vw] lg:rounded-[0.8vw] lg:p-[1.5vw]">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h2 className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-dim)] lg:text-[0.74rem]">
+          Run progression
+        </h2>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          {series.map((s) => {
+            const style = SERIES_STYLE[s.index % SERIES_STYLE.length];
+            return (
+              <span
+                key={`${s.name}-${s.index}`}
+                className="roboto-condensed-regular flex items-center gap-2 text-[0.74rem] text-[color:var(--text-muted)] lg:text-[0.82rem]"
+              >
+                <svg width="20" height="6" aria-hidden="true">
+                  <line x1="0" y1="3" x2="20" y2="3" stroke={style.stroke} strokeWidth="3" strokeDasharray={style.dash} strokeLinecap="round" />
+                </svg>
+                {s.name}
+              </span>
+            );
+          })}
+        </div>
       </div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="mt-1 w-full"
-        role="img"
-        aria-label={`${inn.teamName} wicket progression: ${inn.total} for ${inn.wickets} in ${inn.overs} overs`}
-      >
-        {[0.25, 0.5, 0.75].map((t) => (
-          <line
-            key={t}
-            x1={PAD}
-            x2={W - PAD}
-            y1={sy(yMax * t)}
-            y2={sy(yMax * t)}
-            stroke="var(--panel-line)"
-            strokeWidth={1}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-        <path d={areaPath} fill="var(--orange)" fillOpacity={0.08} stroke="none" />
-        <path
-          d={linePath}
-          fill="none"
-          stroke="var(--orange)"
-          strokeWidth={2}
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-        {pts.map((p) => (
-          <g key={p.label}>
-            <circle cx={sx(p.x)} cy={sy(p.y)} r={16} fill="transparent" />
-            <circle
-              cx={sx(p.x)}
-              cy={sy(p.y)}
-              r={6}
-              fill="var(--orange)"
-              stroke="var(--panel)"
-              strokeWidth={2}
-              vectorEffect="non-scaling-stroke"
-            />
-            <title>{p.label}</title>
-          </g>
-        ))}
-      </svg>
-      <div className="flex justify-between text-[0.62rem] text-[color:var(--text-dim)] lg:text-[0.7rem]">
-        <span>0 ov</span>
-        <span>{inn.overs ? `${inn.overs} ov` : ""}</span>
+      <div ref={containerRef}>
+        {width > 80 ? (
+          <svg width={width} height={H} role="img" aria-label={`Run progression by overs: ${summary}. Dots mark each fall of wickets.`}>
+            {yTicks.map((v) => (
+              <g key={`y${v}`}>
+                <line
+                  x1={M.left}
+                  x2={width - M.right}
+                  y1={sy(v)}
+                  y2={sy(v)}
+                  stroke={v === 0 ? "var(--panel-line-strong)" : "var(--panel-line)"}
+                  strokeWidth={1}
+                />
+                <text x={M.left - 7} y={sy(v)} textAnchor="end" dominantBaseline="middle" fontSize={11} fill="var(--text-dim)">
+                  {v}
+                </text>
+              </g>
+            ))}
+            {xTicks.map((v) => (
+              <text key={`x${v}`} x={sx(v)} y={H - M.bottom + 16} textAnchor="middle" fontSize={11} fill="var(--text-dim)">
+                {v}
+              </text>
+            ))}
+            <text x={width - M.right + 7} y={H - M.bottom + 16} textAnchor="start" fontSize={11} fill="var(--text-dim)">
+              overs
+            </text>
+            <text x={M.left - 7} y={12} textAnchor="end" fontSize={11} fill="var(--text-dim)">
+              runs
+            </text>
+            {series.map((s) => {
+              const style = SERIES_STYLE[s.index % SERIES_STYLE.length];
+              const last = s.pts.length ? s.pts[s.pts.length - 1] : null;
+              const lineEnd =
+                !last || s.endX > last.x || s.total > last.y ? [{ x: s.endX, y: s.total }] : [];
+              const linePts = [{ x: 0, y: 0 }, ...s.pts, ...lineEnd];
+              const d = linePts.map((p, i) => `${i === 0 ? "M" : "L"}${sx(p.x)},${sy(p.y)}`).join(" ");
+              return (
+                <g key={`s${s.index}`}>
+                  <path d={d} fill="none" stroke={style.stroke} strokeWidth={2} strokeLinejoin="round" strokeDasharray={style.dash} />
+                  {s.pts.map((p) => (
+                    <g key={p.label}>
+                      <circle cx={sx(p.x)} cy={sy(p.y)} r={13} fill="transparent" />
+                      <circle cx={sx(p.x)} cy={sy(p.y)} r={4.5} fill={style.stroke} stroke="var(--panel)" strokeWidth={2} />
+                      <title>{p.label}</title>
+                    </g>
+                  ))}
+                </g>
+              );
+            })}
+            {endLabels.map((l) => (
+              <text key={`e${l.index}`} x={sx(l.endX) + 7} y={l.ly} dominantBaseline="middle" fontSize={12} fontWeight={700} fill="var(--text)">
+                {l.total}/{l.wickets}
+              </text>
+            ))}
+          </svg>
+        ) : null}
       </div>
+      <p className="mt-1 text-[0.66rem] text-[color:var(--text-dim)] lg:text-[0.72rem]">
+        Dots mark the fall of each wicket — hover or tap one for the batter and score.
+      </p>
     </div>
   );
 }
@@ -289,7 +364,6 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
             {fow}
           </p>
         ) : null}
-        <FowChart inn={inn} />
       </div>
 
       {/* Bowling */}
@@ -412,6 +486,8 @@ export default function MatchCentreClient({
             ))}
           </div>
         </div>
+
+        <WormChart innings={m.innings} />
 
         {m.innings.length > 1 ? (
           <nav aria-label="Jump to innings" className="sticky top-[74px] z-20 mb-4 flex gap-2 overflow-x-auto rounded-full border border-[var(--panel-line)] bg-[color-mix(in_srgb,var(--ink)_90%,transparent)] p-1.5 backdrop-blur-xl lg:top-[88px] lg:mx-auto lg:mb-6 lg:w-fit">

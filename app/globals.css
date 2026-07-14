@@ -38,6 +38,10 @@
   --lake-deep:  #3E6E8E;
   --lake-dim:   rgba(92, 147, 184, 0.16);
 
+  /* Chart series — CVD-validated against --panel (don't reuse for status) */
+  --chart-1: #E8631A;
+  --chart-2: #4B94CE;
+
   /* Text — warm off-white, never pure #fff */
   --text:       #F4F0E8;
   --text-muted: #AAB3C5;
@@ -4641,6 +4645,10 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
   --lake:       #2E6E92;
   --lake-deep:  #224F6B;
   --lake-dim:   rgba(46, 110, 146, 0.14);
+
+  /* Chart series — CVD-validated against the white light-mode panel */
+  --chart-1: #E8631A;
+  --chart-2: #2272B5;
 
   --text:       #16202E;
   --text-muted: #44556B;
