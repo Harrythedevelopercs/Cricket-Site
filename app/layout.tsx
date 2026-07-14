@@ -1,5 +1,4 @@
-'use client'
-
+import type { Metadata, Viewport } from 'next'
 import { ReactNode } from 'react'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/next'
@@ -10,10 +9,6 @@ import HeaderNavPanel from './components/ui/HeaderNavPanel'
 import FooterPanel from './components/ui/FooterPanel'
 import './globals.css'
 
-// Revamp 2026 — "Blue Hour / Chicago Dusk".
-// New type pairing: Saira Condensed (athletic display) + Archivo (grotesque body).
-// They are loaded into the legacy CSS variable names (--font-oswald / --font-roboto-condensed)
-// so every existing typography class re-skins at once with no stale references.
 const saira = Saira_Condensed({
   subsets: ['latin'],
   weight: ['500', '600', '700', '800', '900'],
@@ -27,32 +22,36 @@ const archivo = Archivo({
   variable: '--font-roboto-condensed',
 })
 
+export const metadata: Metadata = {
+  metadataBase: new URL('https://www.clubcricketofchicago.com'),
+  title: {
+    default: 'Club Cricket of Chicago | Competitive Cricket',
+    template: '%s | Club Cricket of Chicago',
+  },
+  description: 'Competitive cricket, fixtures, results, player statistics, and club news from Club Cricket of Chicago.',
+  icons: { icon: '/images/favicon.ico' },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${saira.variable} ${archivo.variable}`}>
       <head>
-        <title>Club Cricket of Chicago | Discover Competitive Cricket</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Apply saved theme before paint to avoid a flash (default: dusk/dark). */}
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "(function(){try{var t=localStorage.getItem('ccc-theme');document.documentElement.dataset.theme=(t==='light'?'light':'dark');}catch(e){document.documentElement.dataset.theme='dark';}})();",
+            __html: "(function(){try{var t=localStorage.getItem('ccc-theme');document.documentElement.dataset.theme=(t==='light'?'light':'dark');}catch(e){document.documentElement.dataset.theme='dark';}})();",
           }}
         />
-        <link rel="icon" href="/images/favicon.ico" />
         <link rel="preconnect" href="https://media.cricclubs.com" crossOrigin="" />
-        <meta
-          name="description"
-          content="Welcome to Club Cricket of Chicago, your home for cricket in the Windy City. Join us and discover the joy of competitive cricket."
-        />
       </head>
       <body>
-        {/* Google Analytics (GA4) — loaded after the page is interactive. */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-R3N32PZ8ND"
-          strategy="afterInteractive"
-        />
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-R3N32PZ8ND" strategy="afterInteractive" />
         <Script id="ga4-init" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
@@ -61,7 +60,7 @@ gtag('config', 'G-R3N32PZ8ND');`}
         </Script>
         <div className="site_shell">
           <HeaderNavPanel />
-          {children}
+          <main id="main-content" tabIndex={-1}>{children}</main>
           <FooterPanel />
         </div>
         <Analytics />

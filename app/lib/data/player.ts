@@ -6,6 +6,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
 import { TRACKED_SERIES } from "../cricclubs/config";
 import { getCareerStats } from "../cricclubs/endpoints";
+import { isCCCSide } from "./ccc";
+import { formatDismissal } from "./scorecardText";
 
 const IMG = "https://media.cricclubs.com";
 const img = (p?: unknown) =>
@@ -30,8 +32,101 @@ const SEASON_IDS = TRACKED_SERIES.filter((s) => s.year === "2026").map((s) => s.
 type Row = Record<string, unknown>;
 type CareerStats = { battingStats?: Row[]; bowlingStats?: Row[] };
 
+export interface RecentFormEntry {
+  matchId: number;
+  date: string;
+  opponent: string;
+  result: string;
+  won: boolean | null;
+  batting: { runs: number; balls: number; dismissal: string; notOut: boolean } | null;
+  bowling: { overs: string; runs: number; wickets: number } | null;
+}
+
+// Stored match dates are CricClubs "MM/DD/YYYY" strings; parse for ordering only.
+const dateKey = (s?: string | null) => {
+  const m = (s ?? "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? Date.UTC(+m[3], +m[1] - 1, +m[2]) : 0;
+};
+
+const INNINGS_KEYS = ["innings1", "innings2", "innings3", "innings4"] as const;
+
+/** The player's last few appearances, read entirely from stored scorecards. */
+async function buildRecentForm(playerId: number): Promise<RecentFormEntry[]> {
+  const rows = await prisma.$queryRaw<{ match_id: number }[]>`
+    SELECT match_id FROM match_scorecards
+    WHERE jsonb_path_exists(data, '$.*.batting[*].playerID ? (@ == $pid)', jsonb_build_object('pid', ${playerId}::int))
+       OR jsonb_path_exists(data, '$.*.bowling[*].playerID ? (@ == $pid)', jsonb_build_object('pid', ${playerId}::int))
+  `;
+  if (rows.length === 0) return [];
+
+  const matches = await prisma.match.findMany({
+    where: { id: { in: rows.map((r) => r.match_id) } },
+  });
+  const latest = matches
+    .sort((a, b) => dateKey(b.matchDate) - dateKey(a.matchDate) || b.id - a.id)
+    .slice(0, 5);
+  if (latest.length === 0) return [];
+
+  const cards = await prisma.matchScorecard.findMany({
+    where: { matchId: { in: latest.map((m) => m.id) } },
+  });
+  const cardById = new Map(cards.map((c) => [c.matchId, c.data as unknown as Row]));
+
+  return latest.map((m) => {
+    const sc = cardById.get(m.id);
+    let batting: RecentFormEntry["batting"] = null;
+    let bowling: RecentFormEntry["bowling"] = null;
+    for (const key of INNINGS_KEYS) {
+      const inn = sc?.[key] as Row | undefined;
+      if (!inn) continue;
+      if (!batting) {
+        const b = (Array.isArray(inn.batting) ? (inn.batting as Row[]) : []).find(
+          (r) =>
+            num(r.playerID) === playerId &&
+            str(r.outStringNoLink).toUpperCase() !== "DNB"
+        );
+        if (b) {
+          batting = {
+            runs: num(b.runsScored),
+            balls: num(b.ballsFaced),
+            dismissal:
+              formatDismissal(b.outStringNoLink) ||
+              (str(b.isOut) === "1" ? "out" : "not out"),
+            notOut: str(b.isOut) === "0",
+          };
+        }
+      }
+      if (!bowling) {
+        const bw = (Array.isArray(inn.bowling) ? (inn.bowling as Row[]) : []).find(
+          (r) => num(r.playerID) === playerId
+        );
+        if (bw) {
+          const balls = num(bw.balls);
+          bowling = {
+            overs: str(bw.overs) || oversFromBalls(balls),
+            runs: num(bw.runs),
+            wickets: num(bw.wickets),
+          };
+        }
+      }
+    }
+
+    const cccIsTeamOne = isCCCSide(m.teamOneName, m.teamOneId);
+    const cccTeamId = cccIsTeamOne ? m.teamOneId : m.teamTwoId;
+    return {
+      matchId: m.id,
+      date: m.matchDate ?? "",
+      opponent: (cccIsTeamOne ? m.teamTwoName : m.teamOneName) ?? "",
+      result: m.result ?? "",
+      won: m.winner != null && cccTeamId != null ? m.winner === cccTeamId : null,
+      batting,
+      bowling,
+    };
+  });
+}
+
 async function buildPlayerProfile(playerId: number) {
-  const [careerRow, dbPlayer, batting, bowling] = await Promise.all([
+  const [careerRow, dbPlayer, batting, bowling, recentForm] = await Promise.all([
     prisma.playerCareer.findUnique({ where: { playerId } }),
     prisma.player.findUnique({ where: { id: playerId } }),
     prisma.playerBattingStat.findMany({
@@ -40,6 +135,7 @@ async function buildPlayerProfile(playerId: number) {
     prisma.playerBowlingStat.findMany({
       where: { playerId, seriesId: { in: SEASON_IDS } },
     }),
+    buildRecentForm(playerId).catch(() => [] as RecentFormEntry[]),
   ]);
 
   // Career stats come from the DB (refreshed after matches). If a *known* player (one in our
@@ -141,6 +237,7 @@ async function buildPlayerProfile(playerId: number) {
     photo: bio?.photo || img(dbPlayer?.profilePic) || "",
     role: bio?.playingRole || dbPlayer?.playingRole || "",
     season,
+    recentForm,
     careerBatting,
     careerBowling,
   };

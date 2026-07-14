@@ -5,8 +5,8 @@
 
 
 :focus-visible {
-    outline: none; /* Example style for focus-visible */
-     /* Optional: adds space between the outline and the element */
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
 }
 
 :root {
@@ -37,6 +37,10 @@
   --lake:       #5C93B8;
   --lake-deep:  #3E6E8E;
   --lake-dim:   rgba(92, 147, 184, 0.16);
+
+  /* Chart series — CVD-validated against --panel (don't reuse for status) */
+  --chart-1: #E8631A;
+  --chart-2: #4B94CE;
 
   /* Text — warm off-white, never pure #fff */
   --text:       #F4F0E8;
@@ -4642,6 +4646,10 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
   --lake-deep:  #224F6B;
   --lake-dim:   rgba(46, 110, 146, 0.14);
 
+  /* Chart series — CVD-validated against the white light-mode panel */
+  --chart-1: #E8631A;
+  --chart-2: #2272B5;
+
   --text:       #16202E;
   --text-muted: #44556B;
   --text-dim:   #74849A;
@@ -4680,6 +4688,206 @@ html.theme-animating p,
 html.theme-animating a,
 html.theme-animating span {
   transition: background-color 0.55s ease, color 0.55s ease, border-color 0.55s ease;
+}
+
+/* ---------- Accessible shell + mobile navigation preview ---------- */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100003;
+  transform: translateY(-180%);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #1a0d05;
+  font-family: var(--font-body);
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+.logo_container {
+  display: block;
+  margin-top: auto;
+  margin-bottom: auto;
+  transition: width 0.45s ease;
+}
+
+header.main_header a.nav_ele_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--orange);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 22px;
+  white-space: nowrap;
+  line-height: 1;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+header.main_header a.nav_ele_btn:hover {
+  background: var(--orange);
+  color: #1a0d05;
+  box-shadow: 0 8px 22px rgba(244, 122, 42, 0.32);
+}
+
+header.main_header nav.nav_container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(14px, 1.45vw, 28px);
+  margin: auto 18px auto auto;
+}
+header.main_header nav.nav_container .nav_ele { flex: none; }
+header.main_header nav.nav_container .nav_eleIco { display: none; }
+.nav_more_trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.82;
+}
+.nav_more_trigger:hover,
+.nav_more_trigger[data-state="open"] { color: var(--orange); opacity: 1; }
+.nav_more_content {
+  z-index: 100002;
+  width: min(280px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--panel-line-strong);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--ink-2) 96%, transparent);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  animation: ccc-overlay-in 0.18s ease-out;
+}
+.nav_more_list { display: grid; }
+.nav_more_content .nav_ele {
+  display: block;
+  border-bottom: 1px solid var(--panel-line);
+}
+.nav_more_content .nav_ele:last-child { border-bottom: 0; }
+.nav_more_content .nav_ele_text a {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 10px;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-transform: none;
+}
+.nav_more_content .nav_ele_text a:hover { color: var(--orange); }
+.nav_more_content .nav_eleIco { display: none; }
+.nav_more_arrow { fill: var(--panel-line-strong); }
+:root[data-theme="light"] .nav_more_content { background: rgba(255, 255, 255, 0.98); }
+
+.mobile_navigation_overlay,
+.mobile_navigation { display: none; }
+
+@media (max-width: 1024px) {
+  header.main_header nav.nav_container { display: none; }
+  .nav_burger {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 6px 2px;
+  }
+  .mobile_navigation_overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(3, 5, 10, 0.68);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    animation: ccc-overlay-in 0.2s ease-out;
+  }
+  div.mobile_navigation {
+    display: block;
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 100001;
+    width: min(88vw, 430px);
+    height: 100dvh;
+    min-height: 0;
+    margin: 0;
+    padding: 24px clamp(22px, 7vw, 34px) 34px;
+    overflow-y: auto;
+    border-radius: 0;
+    border: 0;
+    border-left: 1px solid var(--panel-line-strong);
+    background: color-mix(in srgb, var(--ink-2) 96%, transparent);
+    box-shadow: -24px 0 60px rgba(0, 0, 0, 0.52);
+    animation: ccc-drawer-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mobile_navigation_topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--panel-line);
+    color: var(--orange);
+  }
+  .mobile_navigation_close {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--panel-line-strong);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text);
+    font: 400 1.75rem/1 var(--font-body);
+    cursor: pointer;
+  }
+  .mob_nav_parent { display: grid; }
+  .mob_nav_link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 54px;
+    border-bottom: 1px solid var(--panel-line);
+    color: var(--text);
+    font-size: 1rem;
+    letter-spacing: 0.025em;
+    transition: color 0.2s ease, padding 0.2s ease;
+  }
+  .mob_nav_link:hover { color: var(--orange); padding-left: 4px; }
+  .mobile_navigation .nav_ele { margin-top: 24px; }
+  .mobile_navigation a.nav_ele_btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 999px;
+    background: var(--orange);
+    color: #1a0d05;
+  }
+}
+
+@keyframes ccc-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ccc-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link,
+  .mobile_navigation_overlay,
+  div.mobile_navigation { animation: none; transition: none; }
+}
+
+:root[data-theme="light"] div.mobile_navigation {
+  background: rgba(255, 255, 255, 0.98);
 }
 
 /* ---- header layout room for the toggle ---- */
