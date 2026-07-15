@@ -36,6 +36,7 @@ export interface CareerLeader {
   seasons: number;
 }
 export interface SeasonBestItem {
+  playerId: number;
   name: string;
   value: number;
 }
@@ -169,7 +170,11 @@ async function buildClubRecords(): Promise<ClubRecords> {
     let highestScore: SeasonBestItem | null = null;
     for (const r of bat) {
       if (r.highestScore != null && (!highestScore || r.highestScore > highestScore.value)) {
-        highestScore = { name: fullName(r.firstName, r.lastName), value: r.highestScore };
+        highestScore = {
+          playerId: r.playerId,
+          name: fullName(r.firstName, r.lastName),
+          value: r.highestScore,
+        };
       }
     }
 
@@ -185,9 +190,10 @@ async function buildClubRecords(): Promise<ClubRecords> {
       eco.set(r.playerId, e);
     }
     const bestEconomy =
-      [...eco.values()]
-        .filter((e) => e.balls >= MIN_ECONOMY_BALLS)
-        .map((e) => ({
+      [...eco.entries()]
+        .filter(([, e]) => e.balls >= MIN_ECONOMY_BALLS)
+        .map(([playerId, e]) => ({
+          playerId,
           name: e.name,
           value: Math.round(((e.runs * 6) / e.balls) * 100) / 100,
         }))
@@ -195,9 +201,11 @@ async function buildClubRecords(): Promise<ClubRecords> {
 
     return {
       year,
-      mostRuns: runLeader ? { name: runLeader.name, value: runLeader.value } : null,
+      mostRuns: runLeader
+        ? { playerId: runLeader.playerId, name: runLeader.name, value: runLeader.value }
+        : null,
       mostWickets: wicketLeader
-        ? { name: wicketLeader.name, value: wicketLeader.value }
+        ? { playerId: wicketLeader.playerId, name: wicketLeader.name, value: wicketLeader.value }
         : null,
       highestScore,
       bestEconomy,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { MatchCentreSkeleton } from "../../components/skeletons/PageSkeletons";
 
 interface Bat {
+  playerId?: number;
   name: string;
   dismissal: string;
   notOut: boolean;
@@ -16,6 +17,7 @@ interface Bat {
   sr: string;
 }
 interface Bowl {
+  playerId?: number;
   name: string;
   overs: string;
   maidens: number;
@@ -251,7 +253,17 @@ function WormChart({ innings }: { innings: Innings[] }) {
               const d = linePts.map((p, i) => `${i === 0 ? "M" : "L"}${sx(p.x)},${sy(p.y)}`).join(" ");
               return (
                 <g key={`s${s.index}`}>
-                  <path d={d} fill="none" stroke={style.stroke} strokeWidth={2} strokeLinejoin="round" strokeDasharray={style.dash} />
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke={style.stroke}
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeDasharray={style.dash}
+                    pathLength={style.dash ? undefined : 1}
+                    className={style.dash ? undefined : "worm-path"}
+                    style={style.dash ? undefined : { animationDelay: `${s.index * 0.45}s` }}
+                  />
                   {s.pts.map((p) => {
                     const dot: ActiveDot = {
                       px: sx(p.x),
@@ -373,7 +385,13 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
               <tr key={i} className="bg-[var(--panel)] border-b border-[var(--panel-line)]">
                 <td className="px-[2vw] lg:px-[0.7vw] py-[2vw] lg:py-[0.5vw]">
                   <p className="roboto-condensed-bold text-[color:var(--text)] text-[3.2vw] lg:text-[0.9vw]">
-                    {b.name}
+                    {b.playerId ? (
+                      <Link href={`/players/${b.playerId}`} className="transition-colors hover:text-[color:var(--orange)] hover:underline">
+                        {b.name}
+                      </Link>
+                    ) : (
+                      b.name
+                    )}
                     {b.notOut ? <span className="text-[color:var(--win)]"> *</span> : null}
                   </p>
                   <p className="roboto-condensed-regular mt-1 min-w-[150px] text-[color:var(--text-muted)] text-[0.72rem] leading-snug lg:min-w-0 lg:text-[0.76vw]">
@@ -448,7 +466,13 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
               {inn.bowling.map((b, i) => (
                 <tr key={i} className="bg-[var(--panel)] border-b border-[var(--panel-line)]">
                   <td className="px-[2vw] lg:px-[0.7vw] py-[2vw] lg:py-[0.5vw] roboto-condensed-bold text-[color:var(--text)] text-[3.2vw] lg:text-[0.9vw]">
-                    {b.name}
+                    {b.playerId ? (
+                      <Link href={`/players/${b.playerId}`} className="transition-colors hover:text-[color:var(--orange)] hover:underline">
+                        {b.name}
+                      </Link>
+                    ) : (
+                      b.name
+                    )}
                   </td>
                   <Num>{b.overs}</Num>
                   <Num>{b.maidens}</Num>

@@ -32,13 +32,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]
     .filter(Boolean)
     .join(" · ");
+  // No explicit openGraph.images: the generated opengraph-image.tsx card wins.
   return {
     title: p.name,
     description,
     openGraph: {
       title: `${p.name} | Club Cricket of Chicago`,
       description,
-      ...(p.photo ? { images: [{ url: p.photo }] } : {}),
     },
   };
 }

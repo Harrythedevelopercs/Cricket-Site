@@ -71,6 +71,19 @@
   --color-foreground: var(--text);
 }
 
+/* Worm-chart lines draw in from the start of the innings (solid series only —
+   dashed variants keep their static dash pattern). Skipped under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .worm-path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: worm-draw 0.9s ease-out both;
+  }
+}
+@keyframes worm-draw {
+  to { stroke-dashoffset: 0; }
+}
+
 div.hero-banner {
   width: 100%;
   background-color: beige;

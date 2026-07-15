@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import UpcomingMatchPanel from "../components/calendar/UpcomingMatchPanel";
 import DateCalendar from "../components/calendar/DateCalendar";
 import FixturesList, { isUpcomingEntry } from "../components/calendar/FixturesList";
+import ResultsList from "../components/calendar/ResultsList";
 import SectionTitleEle from "../components/ui/SectionTitleEle";
 import { ScheduleSkeleton } from "../components/skeletons/PageSkeletons";
 import { usePageTitle } from "../lib/usePageTitle";
@@ -15,6 +16,7 @@ import { usePageTitle } from "../lib/usePageTitle";
 const VIEWS = [
   { id: "list", label: "List" },
   { id: "calendar", label: "Calendar" },
+  { id: "results", label: "Results" },
 ];
 
 export default function Page() {
@@ -24,6 +26,19 @@ export default function Page() {
   const [matches, setMatches] = useState(null);
   // The fixtures LIST is the primary view; the month calendar is one tap away.
   const [view, setView] = useState("list");
+  const [results, setResults] = useState(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+
+  // Results load lazily, the first time that tab is opened.
+  useEffect(() => {
+    if (view !== "results" || results !== null) return;
+    setResultsLoading(true);
+    fetch("/api/recent-results?limit=20")
+      .then((r) => r.json())
+      .then((data) => setResults(data.results || []))
+      .catch(() => setResults([]))
+      .finally(() => setResultsLoading(false));
+  }, [view, results]);
 
   useEffect(() => {
     fetch("/api/schedule")
@@ -58,21 +73,14 @@ export default function Page() {
     return <div className="error-message">Error loading calendar content: {error}</div>;
   }
 
-  if (upcomingEntries.length === 0) {
-    // FixturesList renders the honest empty state (styled, on-theme).
-    return (
-      <div className="py-20 text-[color:var(--text)]">
-        <FixturesList entries={[]} />
-      </div>
-    );
-  }
-
   return (
     // No forced height: the old `min-h-screen` + `aspect-[16/9]` padded the page out
     // to a full viewport and exposed a big empty band below the short calendar.
+    // With no upcoming fixtures the tabs stay usable (offseason = Results season);
+    // FixturesList renders the honest empty state for the list view.
     <div className="py-20 text-[color:var(--text)]">
       {/* Next Match card + countdown — unchanged */}
-      <UpcomingMatchPanel match={upcomingEntries[0]} />
+      {upcomingEntries.length > 0 ? <UpcomingMatchPanel match={upcomingEntries[0]} /> : null}
 
       {/* Fixtures header + List/Calendar switch */}
       <section className="base_paddings">
@@ -119,10 +127,14 @@ export default function Page() {
         <div role="tabpanel" id="fixtures-panel-list" aria-labelledby="fixtures-tab-list">
           <FixturesList entries={upcomingEntries} />
         </div>
-      ) : (
+      ) : view === "calendar" ? (
         <div role="tabpanel" id="fixtures-panel-calendar" aria-labelledby="fixtures-tab-calendar">
           {/* DateCalendar keeps its original section markup + styles */}
           <DateCalendar matches={{ ...matches, entries: upcomingEntries }} />
+        </div>
+      ) : (
+        <div role="tabpanel" id="fixtures-panel-results" aria-labelledby="fixtures-tab-results">
+          <ResultsList results={results} loading={resultsLoading} />
         </div>
       )}
     </div>
