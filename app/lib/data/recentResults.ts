@@ -22,20 +22,28 @@ export interface RecentResult {
   result: string;
 }
 
+// Stored match dates are CricClubs "MM/DD/YYYY" strings; parse for ordering only.
+const dateKey = (s?: string | null) => {
+  const m = (s ?? "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? Date.UTC(+m[3], +m[1] - 1, +m[2]) : 0;
+};
+
 async function buildRecentResults(limit = 6): Promise<RecentResult[]> {
+  // No DB-side ordering: matchDate is a string column, and lastUpdated tracks scorer
+  // EDITS, not recency — a years-old match corrected yesterday would sort first.
   const candidates = await prisma.match.findMany({
     where: {
       isComplete: true,
       OR: cccMatchOr,
       NOT: { result: { contains: "Abandon", mode: "insensitive" } },
     },
-    orderBy: [{ lastUpdated: "desc" }, { id: "desc" }],
-    take: limit * 4,
   });
 
-  // Drop matches with no real scoreline (e.g. forfeits recorded as 0/0).
+  // Drop matches with no real scoreline (e.g. forfeits recorded as 0/0), then take the
+  // most recent by actual match date (id breaks same-day ties).
   const matches = candidates
     .filter((m) => (m.t1Total ?? 0) > 0 || (m.t2Total ?? 0) > 0)
+    .sort((a, b) => dateKey(b.matchDate) - dateKey(a.matchDate) || b.id - a.id)
     .slice(0, limit);
 
   return matches.map((m) => {

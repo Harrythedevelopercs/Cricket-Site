@@ -19,6 +19,12 @@ const SEASON = "Summer 2026";
 const SEASON_SERIES = TRACKED_SERIES.filter((s) => s.year === "2026");
 const SEASON_IDS = SEASON_SERIES.map((s) => s.id);
 
+// Stored match dates are CricClubs "MM/DD/YYYY" strings; parse for ordering only.
+const dateKey = (s?: string | null) => {
+  const m = (s ?? "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? Date.UTC(+m[3], +m[1] - 1, +m[2]) : 0;
+};
+
 export interface Performer {
   name: string;
   pic: string;
@@ -76,7 +82,6 @@ async function buildHomeData(): Promise<HomeData> {
     }),
     prisma.match.findMany({
       where: { seriesId: { in: SEASON_IDS }, isComplete: true, OR: cccMatchOr },
-      orderBy: [{ lastUpdated: "desc" }, { id: "desc" }],
     }),
     prisma.syncState.aggregate({ _max: { lastSyncedAt: true } }),
     prisma.match.findMany({
@@ -91,6 +96,9 @@ async function buildHomeData(): Promise<HomeData> {
 
   // Per-division recent form, W/L/T/N from CCC's perspective (raw result strings decide
   // ties/no-results; anything without a winner or tie marker counts as N, not L).
+  // Newest-first by actual match date (matchDate is an MM/DD/YYYY string; lastUpdated
+  // only tracks scorer edits), so each division's form reflects its latest 5 games.
+  formMatches.sort((a, b) => dateKey(b.matchDate) - dateKey(a.matchDate) || b.id - a.id);
   const formBySeries = new Map<number, FormLetter[]>();
   for (const m of formMatches) {
     const list = formBySeries.get(m.seriesId) ?? [];

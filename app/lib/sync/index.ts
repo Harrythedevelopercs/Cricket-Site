@@ -334,6 +334,7 @@ export async function syncRosters(): Promise<{ players: number; roster: number }
   for (const teamId of CCC_TEAM_IDS) {
     const data = await getTeamPlayers(teamId);
     const list = data?.teamPlayers ?? [];
+    const seenPlayerIds: number[] = [];
     for (const p of list) {
       if (!p.playerID) continue;
       const playerPayload = {
@@ -358,6 +359,17 @@ export async function syncRosters(): Promise<{ players: number; roster: number }
         update: rosterPayload,
       });
       roster++;
+      seenPlayerIds.push(p.playerID);
+    }
+    // Reconcile: a NON-EMPTY feed is the team's complete current squad, so drop roster
+    // rows it no longer lists (player removed, or CricClubs merged duplicate profiles —
+    // the dead playerID vanishes upstream but would otherwise linger here forever and
+    // show as a duplicate on /players). An empty feed is ambiguous (fluke blip vs real
+    // empty squad), so leave the stored roster alone — same policy as syncFixtures.
+    if (seenPlayerIds.length > 0) {
+      await prisma.teamRoster.deleteMany({
+        where: { teamId, playerId: { notIn: seenPlayerIds } },
+      });
     }
   }
   return { players, roster };
