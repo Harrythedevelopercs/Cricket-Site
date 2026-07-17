@@ -128,13 +128,14 @@ export default function PlayerProfileClient({
         {/* Hero */}
         <div className="ccc-card flex flex-col lg:flex-row items-center lg:items-end gap-[5vw] lg:gap-[2vw] mt-[5vw] lg:mt-[1.5vw] mb-[8vw] lg:mb-[2.5vw] bg-[var(--panel)] rounded-[3vw] lg:rounded-[0.8vw] border border-[var(--panel-line)] p-[6vw] lg:p-[2vw]">
           <div className="relative w-[42vw] h-[42vw] lg:w-[12vw] lg:h-[12vw] rounded-[2vw] lg:rounded-[0.6vw] overflow-hidden ring-2 ring-[var(--orange)] shrink-0 bg-[var(--panel-2)]">
+            {/* Optimized on purpose: raw CricClubs uploads run 15 KB–1.2 MB; the
+                optimizer serves a ~200px WebP from the edge instead of the original. */}
             <Image
               src={p.photo || "/images/sample_player_image.png"}
               alt={p.name}
               fill
               sizes="200px"
               className="object-cover"
-              unoptimized
             />
           </div>
           <div className="text-center lg:text-left flex-1">
