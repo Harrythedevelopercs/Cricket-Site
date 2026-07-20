@@ -62,7 +62,7 @@ export interface ClubRecords {
   careerLeaders: {
     runs: CareerLeader[];
     wickets: CareerLeader[];
-    dismissals: CareerLeader[];
+    catches: CareerLeader[];
   };
   seasonBests: SeasonBests[];
   milestones: MilestoneEntry[];
@@ -152,7 +152,9 @@ async function buildClubRecords(): Promise<ClubRecords> {
   // ---- Career leaders (all seasons) ----
   const runsCareer = aggregateByPlayer(batting, (r) => r.runs);
   const wicketsCareer = aggregateByPlayer(bowling, (r) => r.wickets);
-  const dismissalsCareer = aggregateByPlayer(fielding, (r) => r.total);
+  // All catches taken — in the outfield or behind the stumps. (CricClubs reports the
+  // two separately; run-outs and stumpings are deliberately not counted here.)
+  const catchesCareer = aggregateByPlayer(fielding, (r) => r.catches + r.wkCatches);
 
   // ---- Season bests (one entry per tracked year, 2022 → 2026) ----
   const seasonBests: SeasonBests[] = SEASON_YEARS.map((year) => {
@@ -223,7 +225,7 @@ async function buildClubRecords(): Promise<ClubRecords> {
     careerLeaders: {
       runs: topLeaders(runsCareer),
       wickets: topLeaders(wicketsCareer),
-      dismissals: topLeaders(dismissalsCareer),
+      catches: topLeaders(catchesCareer),
     },
     seasonBests,
     milestones,

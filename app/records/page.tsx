@@ -41,7 +41,7 @@ function SectionHeading({ children, sub }: { children: ReactNode; sub?: string }
   )
 }
 
-/* One career-leader table (Most Runs / Most Wickets / Most Dismissals). Row style
+/* One career-leader table (Most Runs / Most Wickets / Most Catches). Row style
    follows the leaderboard conventions of HomeSeasonHub's PerformerList. */
 function LeaderTable({
   title,
@@ -283,7 +283,7 @@ export default function Page() {
     !!records &&
     (records.careerLeaders.runs.length > 0 ||
       records.careerLeaders.wickets.length > 0 ||
-      records.careerLeaders.dismissals.length > 0)
+      records.careerLeaders.catches.length > 0)
 
   return (
     <section className="base_paddings pt-[104px] pb-[14vw] lg:pt-[140px] lg:pb-[4vw]">
@@ -326,9 +326,9 @@ export default function Page() {
                   leaders={records.careerLeaders.wickets}
                 />
                 <LeaderTable
-                  title="Most Dismissals"
-                  unit="Dismissals"
-                  leaders={records.careerLeaders.dismissals}
+                  title="Most Catches"
+                  unit="Catches"
+                  leaders={records.careerLeaders.catches}
                 />
               </div>
 
