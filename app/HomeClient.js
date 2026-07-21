@@ -4,7 +4,6 @@ import { useEffect, useState, Fragment } from "react";
 import HeroBanner from "./components/ui/HeroBanner";
 import RecentResults from "./components/ui/RecentResults";
 import MatchReports from "./components/ui/MatchReports";
-import RecordsStrip from "./components/ui/RecordsStrip";
 import ClubGallery from "./components/ui/ClubGallery";
 import ClubTV from "./components/ui/ClubTV";
 import MeetSquad from "./components/ui/MeetSquad";
@@ -98,7 +97,6 @@ const HomePageContent = ({ initialPageData, initialFixtures, initialResults, ini
               <HomeSeasonHub />
               <RecentResults results={recentResults ?? []} />
               <MatchReports reports={matchReports ?? []} />
-              <RecordsStrip />
               <ClubGallery />
               <ClubTV />
             </Fragment>

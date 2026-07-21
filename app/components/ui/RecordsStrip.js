@@ -1,29 +1,93 @@
-import Link from "next/link";
+"use client";
 
-// Slim cross-link band: the record books live at /records but had no home-page
-// entry point (reports and gallery already have their own sections).
-export default function RecordsStrip() {
+import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import ChicagoSkyline from "./ChicagoSkyline";
+import ChicagoStar from "./ChicagoStar";
+
+const number = new Intl.NumberFormat("en-US");
+
+// The home page's long-view counterpoint to the current-season hub. This is a
+// deliberately singular band rather than three generic stat cards: one timeline,
+// one club story, and three live totals that grow after every CricClubs sync.
+export default function RecordsStrip({ history }) {
+  const reduce = useReducedMotion();
+  if (!history) return null;
+
+  const stats = [
+    { number: "01", label: "Matches played", value: history.matches },
+    { number: "02", label: "Runs scored", value: history.runs },
+    { number: "03", label: "Wickets taken", value: history.wickets },
+  ];
+
+  const reveal = reduce
+    ? {}
+    : {
+        initial: { opacity: 0, y: 28 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, amount: 0.3 },
+        transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+      };
+
   return (
-    <section className="base_paddings py-[6vw] lg:py-[2.2vw]">
+    <motion.section
+      className="ccc-legacy base_paddings"
+      aria-labelledby="club-legacy-title"
+      {...reveal}
+    >
       <div className="max_content center_aligned">
-        <Link
-          href="/records"
-          className="ccc-card ccc-card-hover group flex flex-wrap items-center justify-between gap-5 px-6 py-5 lg:px-9 lg:py-7"
-        >
-          <div className="min-w-0">
-            <p className="ds-eyebrow ds-eyebrow--orange">The record books</p>
-            <h2 className="oswald-bold mt-1 uppercase text-[color:var(--text)] text-[5.5vw] lg:text-[1.6vw]">
-              Club records &amp; milestones
-            </h2>
-            <p className="roboto-condensed-regular mt-1 text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.95vw]">
-              Career leaders, season bests, and every CCC milestone in one place.
-            </p>
+        <div className="ccc-legacy-panel">
+          <span className="ccc-legacy-ghost" aria-hidden="true">CCC</span>
+          <div className="ccc-legacy-content">
+            <div className="ccc-legacy-story">
+              <p className="ds-eyebrow ds-eyebrow--orange flex items-center gap-2">
+                <ChicagoStar size="0.8em" /> The club legacy
+              </p>
+              <h2 id="club-legacy-title" className="ds-display ccc-legacy-title">
+                Every innings<br />adds to the <span>story.</span>
+              </h2>
+              <p className="ccc-legacy-copy">
+                The complete CCC record tracked in CricClubs since {history.since}—and
+                still counting with every match.
+              </p>
+              <Link href="/records" className="ccc-btn ccc-btn-primary ccc-legacy-link">
+                Open the record books <span className="ccc-btn-arrow">→</span>
+              </Link>
+            </div>
+
+            <dl className="ccc-legacy-stats" aria-label={`Club totals since ${history.since}`}>
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  className="ccc-legacy-stat"
+                  initial={reduce ? false : { opacity: 0, x: 22 }}
+                  whileInView={reduce ? undefined : { opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.5 }}
+                  transition={{
+                    duration: 0.6,
+                    delay: reduce ? 0 : 0.18 + index * 0.1,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  <dt>
+                    <span className="ccc-legacy-index" aria-hidden="true">{stat.number}</span>
+                    {stat.label}
+                  </dt>
+                  <dd className="ds-num">{number.format(stat.value)}</dd>
+                  <dd className="ccc-legacy-meta">All competitions</dd>
+                </motion.div>
+              ))}
+            </dl>
           </div>
-          <span className="ccc-btn ccc-btn-primary shrink-0" aria-hidden="true">
-            View records <span className="transition-transform group-hover:translate-x-1">→</span>
-          </span>
-        </Link>
+
+          <div className="ccc-legacy-timeline" aria-hidden="true">
+            <span>{history.since}</span>
+            <i />
+            <span>Today</span>
+          </div>
+          <ChicagoSkyline className="ccc-legacy-skyline" />
+        </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

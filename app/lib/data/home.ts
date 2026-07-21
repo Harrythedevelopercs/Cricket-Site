@@ -6,6 +6,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "../db/prisma";
 import { TRACKED_SERIES } from "../cricclubs/config";
 import { CCC_NAME, isCCCName, isCCCSide, cccMatchOr } from "./ccc";
+import { getClubHistoryTotals, type ClubHistoryTotals } from "./clubHistory";
 
 const IMG = "https://media.cricclubs.com";
 const img = (p?: string | null) =>
@@ -59,6 +60,7 @@ export interface OnThisDay {
 export interface HomeData {
   season: string;
   stats: { matches: number; runs: number; wickets: number; sixes: number };
+  history: ClubHistoryTotals;
   topBatsmen: Performer[];
   topBowlers: Performer[];
   divisions: DivisionSnapshot[];
@@ -68,7 +70,7 @@ export interface HomeData {
 }
 
 async function buildHomeData(): Promise<HomeData> {
-  const [battingRows, bowlingRows, standings, formMatches, syncAgg, pastMatches] =
+  const [battingRows, bowlingRows, standings, formMatches, syncAgg, pastMatches, history] =
     await Promise.all([
     prisma.playerBattingStat.findMany({
       where: { seriesId: { in: SEASON_IDS }, teamName: { in: CCC_TEAM_NAMES } },
@@ -92,6 +94,7 @@ async function buildHomeData(): Promise<HomeData> {
         t1Total: true, t1Wickets: true, t2Total: true, t2Wickets: true,
       },
     }),
+    getClubHistoryTotals(),
   ]);
 
   // Per-division recent form, W/L/T/N from CCC's perspective (raw result strings decide
@@ -217,6 +220,7 @@ async function buildHomeData(): Promise<HomeData> {
   return {
     season: SEASON,
     stats: { matches, runs, wickets, sixes },
+    history,
     topBatsmen,
     topBowlers,
     divisions,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import RecordsStrip from "./RecordsStrip";
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -214,37 +215,40 @@ export default function HomeSeasonHub() {
   }, []);
 
   if (!data || data.error) return null;
-  const { season, stats, topBatsmen, topBowlers, divisions, syncedAt, onThisDay } = data;
+  const { season, stats, history, topBatsmen, topBowlers, divisions, syncedAt, onThisDay } = data;
 
   return (
-    <section className="base_paddings py-[9vw] lg:py-[3vw] relative z-[6]">
-      <div className="max_content center_aligned mx-auto">
-        <SectionHeading
-          sub={`${season} — ${Number(stats.matches).toLocaleString()} matches · ${Number(
-            stats.runs
-          ).toLocaleString()} runs · ${Number(stats.wickets).toLocaleString()} wickets · ${Number(
-            stats.sixes
-          ).toLocaleString()} sixes`}
-        >
-          Our Divisions
-        </SectionHeading>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.4vw]">
-          {divisions.map((d) => (
-            <DivisionCard key={d.slug} d={d} />
-          ))}
-        </div>
-        <SyncStamp iso={syncedAt} />
-        <OnThisDayCard item={onThisDay} />
-        <div className="mb-[11vw] lg:mb-[3.5vw]" />
+    <>
+      <section className="base_paddings py-[9vw] lg:py-[3vw] relative z-[6]">
+        <div className="max_content center_aligned mx-auto">
+          <SectionHeading
+            sub={`${season} — ${Number(stats.matches).toLocaleString()} matches · ${Number(
+              stats.runs
+            ).toLocaleString()} runs · ${Number(stats.wickets).toLocaleString()} wickets · ${Number(
+              stats.sixes
+            ).toLocaleString()} sixes`}
+          >
+            Our Divisions
+          </SectionHeading>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.4vw]">
+            {divisions.map((d) => (
+              <DivisionCard key={d.slug} d={d} />
+            ))}
+          </div>
+          <SyncStamp iso={syncedAt} />
+          <OnThisDayCard item={onThisDay} />
+          <div className="mb-[11vw] lg:mb-[3.5vw]" />
 
-        <SectionHeading sub="Club Cricket of Chicago leaders">
-          Leading This Season
-        </SectionHeading>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw]">
-          <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
-          <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
+          <SectionHeading sub="Club Cricket of Chicago leaders">
+            Leading This Season
+          </SectionHeading>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw]">
+            <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
+            <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+      <RecordsStrip history={history} />
+    </>
   );
 }
