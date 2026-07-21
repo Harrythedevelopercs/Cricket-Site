@@ -1,6 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "framer-motion";
 import Link from "next/link";
 import ChicagoSkyline from "./ChicagoSkyline";
 import ChicagoStar from "./ChicagoStar";
@@ -9,7 +17,39 @@ const number = new Intl.NumberFormat("en-US");
 
 // The home page's long-view counterpoint to the current-season hub. This is a
 // deliberately singular band rather than three generic stat cards: one timeline,
-// one club story, and three live totals that grow after every CricClubs sync.
+// one club story, and three live totals that grow with every match.
+function AnimatedTotal({ value, reduce }) {
+  const totalRef = useRef(null);
+  const isInView = useInView(totalRef, { once: true, amount: 0.75 });
+  const count = useMotionValue(reduce ? value : 0);
+  const formattedCount = useTransform(count, (latest) =>
+    number.format(Math.round(latest)),
+  );
+
+  useEffect(() => {
+    if (reduce) {
+      count.jump(value);
+      return undefined;
+    }
+
+    if (!isInView) return undefined;
+
+    const controls = animate(count, value, {
+      duration: 1.25,
+      ease: [0.16, 1, 0.3, 1],
+    });
+
+    return () => controls.stop();
+  }, [count, isInView, reduce, value]);
+
+  return (
+    <dd ref={totalRef} className="ds-num">
+      <motion.span aria-hidden="true">{formattedCount}</motion.span>
+      <span className="sr-only">{number.format(value)}</span>
+    </dd>
+  );
+}
+
 export default function RecordsStrip({ history }) {
   const reduce = useReducedMotion();
   if (!history) return null;
@@ -47,8 +87,8 @@ export default function RecordsStrip({ history }) {
                 Every innings<br />adds to the <span>story.</span>
               </h2>
               <p className="ccc-legacy-copy">
-                The complete CCC record tracked in CricClubs since {history.since}—and
-                still counting with every match.
+                Season after season since {history.since}, every innings adds another
+                line to our Chicago story.
               </p>
               <Link href="/records" className="ccc-btn ccc-btn-primary ccc-legacy-link">
                 Open the record books <span className="ccc-btn-arrow">→</span>
@@ -73,7 +113,7 @@ export default function RecordsStrip({ history }) {
                     <span className="ccc-legacy-index" aria-hidden="true">{stat.number}</span>
                     {stat.label}
                   </dt>
-                  <dd className="ds-num">{number.format(stat.value)}</dd>
+                  <AnimatedTotal value={stat.value} reduce={reduce} />
                   <dd className="ccc-legacy-meta">All competitions</dd>
                 </motion.div>
               ))}
@@ -82,7 +122,16 @@ export default function RecordsStrip({ history }) {
 
           <div className="ccc-legacy-timeline" aria-hidden="true">
             <span>{history.since}</span>
-            <i />
+            <motion.i
+              initial={reduce ? false : { scaleX: 0 }}
+              whileInView={reduce ? undefined : { scaleX: 1 }}
+              viewport={{ once: true, amount: 0.8 }}
+              transition={{
+                duration: 1.1,
+                delay: 0.25,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            />
             <span>Today</span>
           </div>
           <ChicagoSkyline className="ccc-legacy-skyline" />

@@ -5058,11 +5058,28 @@ header.main_header .nav_container { width: 80%; }
 }
 .ccc-legacy-stat {
   position: relative;
+  overflow: hidden;
   display: flex;
   min-width: 0;
   flex-direction: column;
   justify-content: center;
   padding: clamp(24px, 2.2vw, 38px) clamp(18px, 2vw, 32px);
+}
+.ccc-legacy-stat::before {
+  content: '';
+  position: absolute;
+  inset: 14% 7%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(244, 122, 42, 0.18) 0%, transparent 68%);
+  filter: blur(18px);
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scale(0.75);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.ccc-legacy-stat > * {
+  position: relative;
+  z-index: 1;
 }
 .ccc-legacy-stat + .ccc-legacy-stat {
   border-left: 1px solid rgba(176, 192, 222, 0.18);
@@ -5085,6 +5102,7 @@ header.main_header .nav_container { width: 80%; }
   color: #f4f0e8;
   font-size: clamp(46px, 4.1vw, 68px);
   line-height: 0.9;
+  text-shadow: 0 0 32px rgba(244, 122, 42, 0.12);
   white-space: nowrap;
 }
 .ccc-legacy-meta {
@@ -5117,6 +5135,7 @@ header.main_header .nav_container { width: 80%; }
   display: block;
   height: 2px;
   background: linear-gradient(90deg, var(--orange) 0%, rgba(244, 122, 42, 0.72) 66%, rgba(244, 122, 42, 0.18) 100%);
+  transform-origin: left center;
 }
 .ccc-legacy-timeline i::before,
 .ccc-legacy-timeline i::after {
@@ -5131,7 +5150,14 @@ header.main_header .nav_container { width: 80%; }
   transform: translateY(-50%);
 }
 .ccc-legacy-timeline i::before { left: 0; }
-.ccc-legacy-timeline i::after { right: 0; }
+.ccc-legacy-timeline i::after {
+  right: 0;
+  animation: ccc-legacy-pulse 2.6s ease-in-out infinite;
+}
+@keyframes ccc-legacy-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 122, 42, 0); }
+  50% { box-shadow: 0 0 0 7px rgba(244, 122, 42, 0.12); }
+}
 .ccc-legacy-skyline {
   z-index: 1;
   left: 24%;
@@ -5143,6 +5169,13 @@ header.main_header .nav_container { width: 80%; }
 .ccc-legacy-skyline .sky-far { fill: #273653; }
 .ccc-legacy-skyline .sky-mid { fill: #18243a; }
 .ccc-legacy-skyline .sky-near { fill: #05070c; }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ccc-legacy-stat:hover::before {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
 
 @media (max-width: 1023px) {
   .ccc-legacy-panel { min-height: 0; }
@@ -5186,6 +5219,8 @@ header.main_header .nav_container { width: 80%; }
 
 @media (prefers-reduced-motion: reduce) {
   .ccc-legacy *, .ccc-legacy *::before, .ccc-legacy *::after {
+    animation: none !important;
     scroll-behavior: auto !important;
+    transition: none !important;
   }
 }

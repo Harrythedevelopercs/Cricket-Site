@@ -165,7 +165,7 @@ function DivisionCard({ d }) {
   );
 }
 
-// "Stats updated Sun, Jun 28 · 9:40 PM" — when the CricClubs mirror last synced.
+// "Stats updated Sun, Jun 28 · 9:40 PM" — when the club stats last refreshed.
 function SyncStamp({ iso }) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -177,7 +177,7 @@ function SyncStamp({ iso }) {
   });
   return (
     <p className="roboto-condensed-regular text-[color:var(--text-dim)] text-[2.8vw] lg:text-[0.78vw] mt-[3vw] lg:mt-[1vw]">
-      Stats updated {label} · via CricClubs
+      Stats updated {label}
     </p>
   );
 }
