@@ -5170,6 +5170,44 @@ header.main_header .nav_container { width: 80%; }
 .ccc-legacy-skyline .sky-mid { fill: #18243a; }
 .ccc-legacy-skyline .sky-near { fill: #05070c; }
 
+/* The legacy panel is intentionally art-directed, so its hardcoded dusk palette
+   needs a complete daylight counterpart instead of relying on inherited tokens. */
+:root[data-theme="light"] .ccc-legacy-panel {
+  color: var(--text);
+  border-color: rgba(22, 34, 52, 0.14);
+  background:
+    radial-gradient(60% 95% at 4% 12%, rgba(232, 99, 26, 0.13) 0%, transparent 58%),
+    radial-gradient(68% 100% at 100% 0%, rgba(46, 110, 146, 0.13) 0%, transparent 58%),
+    linear-gradient(135deg, #ffffff 0%, #f4f8fc 54%, #e8f1f8 100%);
+  box-shadow:
+    0 30px 68px -34px rgba(22, 34, 52, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-theme="light"] .ccc-legacy-panel::after {
+  background-image:
+    linear-gradient(rgba(22, 34, 52, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 34, 52, 0.035) 1px, transparent 1px);
+}
+:root[data-theme="light"] .ccc-legacy-ghost { color: rgba(22, 34, 52, 0.035); }
+:root[data-theme="light"] .ccc-legacy-title,
+:root[data-theme="light"] .ccc-legacy-stat dd.ds-num { color: var(--text); }
+:root[data-theme="light"] .ccc-legacy-copy,
+:root[data-theme="light"] .ccc-legacy-stat dt,
+:root[data-theme="light"] .ccc-legacy-timeline { color: var(--text-muted); }
+:root[data-theme="light"] .ccc-legacy-meta { color: var(--text-muted); }
+:root[data-theme="light"] .ccc-legacy-stats,
+:root[data-theme="light"] .ccc-legacy-stat + .ccc-legacy-stat {
+  border-color: rgba(22, 34, 52, 0.14);
+}
+:root[data-theme="light"] .ccc-legacy-stat dd.ds-num {
+  text-shadow: 0 0 30px rgba(232, 99, 26, 0.1);
+}
+:root[data-theme="light"] .ccc-legacy-timeline i::before,
+:root[data-theme="light"] .ccc-legacy-timeline i::after { background: #f4f8fc; }
+:root[data-theme="light"] .ccc-legacy-skyline .sky-far { fill: var(--skyline-far); }
+:root[data-theme="light"] .ccc-legacy-skyline .sky-mid { fill: var(--skyline-mid); }
+:root[data-theme="light"] .ccc-legacy-skyline .sky-near { fill: var(--skyline-near); }
+
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .ccc-legacy-stat:hover::before {
     opacity: 0.7;
