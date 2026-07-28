@@ -4579,7 +4579,21 @@ div.credsContainer_grph img
 .ccc-stumps {
   position: relative; display: inline-flex;
   align-items: center; justify-content: center;
+  /* Pale timber reads as a watermark against the dark panel. */
+  --timber-hi: #F3E9D6;
+  --timber:    #DCC8A2;
+  --timber-lo: #A08F63;
+  --dust:      #E9DFC9;
 }
+/* On the white light-mode panel that cream is invisible — the timber goes dark
+   and a little more opaque so the watermark still reads. */
+:root[data-theme="light"] .ccc-stumps {
+  --timber-hi: #9A7B48;
+  --timber:    #7A5F35;
+  --timber-lo: #4E3C21;
+  --dust:      #A8977B;
+}
+:root[data-theme="light"] .ccc-stump { opacity: 0.42; }
 /* sat slightly high so the timber stays behind the figure and clear of the
    tile's label underneath */
 .ccc-stumps-art {
@@ -4789,6 +4803,10 @@ div.credsContainer_grph img
   .ccc-gate-track { height: 2.4vw; border-radius: 0.4vw; }
   .ccc-gate-bar { border-radius: 0.38vw; }
   .ccc-gate i { top: 0.18vw; left: 0.35vw; font-size: 0.62vw; }
+  /* must repeat the flip here: the rule above re-sets `left` for every gate
+     label, which would otherwise override .ccc-gate--end's `left: auto` and
+     leave the last label stretched against the track's clipped edge */
+  .ccc-gate--end i { left: auto; right: 0.35vw; }
 }
 
 /* ---------- Number Zone sortable tables (tournaments/StatTable.tsx) ----------

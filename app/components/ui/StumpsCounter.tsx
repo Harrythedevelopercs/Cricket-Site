@@ -34,10 +34,12 @@ export default function StumpsCounter({ value }: { value: number }) {
             outside this window and flies in (overflow is visible) */}
         <svg viewBox="34 26 122 158" aria-hidden="true">
           <defs>
+            {/* Timber tones come from CSS vars so they can flip with the theme —
+                the dark-mode cream is nearly invisible on a white panel. */}
             <linearGradient id={`wood-${uid}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#F3E9D6" />
-              <stop offset="40%" stopColor="#DCC8A2" />
-              <stop offset="100%" stopColor="#A08F63" />
+              <stop offset="0%" stopColor="var(--timber-hi)" />
+              <stop offset="40%" stopColor="var(--timber)" />
+              <stop offset="100%" stopColor="var(--timber-lo)" />
             </linearGradient>
             <linearGradient id={`bail-${uid}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--orange-bright)" />
@@ -79,13 +81,13 @@ export default function StumpsCounter({ value }: { value: number }) {
           <circle className="ccc-impact" cx="130" cy="60" r="13" fill="none" stroke="var(--orange-bright)" strokeWidth="2.5" />
 
           <g className="ccc-dust" style={{ ["--dx" as string]: "-16px", ["--dy" as string]: "-9px" }}>
-            <circle cx="126" cy="62" r="3.4" fill="#E9DFC9" />
+            <circle cx="126" cy="62" r="3.4" fill="var(--dust)" />
           </g>
           <g className="ccc-dust" style={{ ["--dx" as string]: "12px", ["--dy" as string]: "-14px" }}>
-            <circle cx="133" cy="58" r="2.6" fill="#E9DFC9" />
+            <circle cx="133" cy="58" r="2.6" fill="var(--dust)" />
           </g>
           <g className="ccc-dust" style={{ ["--dx" as string]: "-22px", ["--dy" as string]: "6px" }}>
-            <circle cx="128" cy="66" r="2.2" fill="#E9DFC9" />
+            <circle cx="128" cy="66" r="2.2" fill="var(--dust)" />
           </g>
 
           <g className="ccc-cricball">
