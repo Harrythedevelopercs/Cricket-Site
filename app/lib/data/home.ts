@@ -5,7 +5,7 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "../db/prisma";
 import { TRACKED_SERIES } from "../cricclubs/config";
-import { CCC_NAME, isCCCName, isCCCSide, cccMatchOr } from "./ccc";
+import { CCC_NAME, isCCCName, isCCCSide, cccMatchOr, cccFixtureOr } from "./ccc";
 import { getClubHistoryTotals, type ClubHistoryTotals } from "./clubHistory";
 
 const IMG = "https://media.cricclubs.com";
@@ -34,6 +34,12 @@ export interface Performer {
 }
 /** One completed match in a division's recent form, oldest → newest. */
 export type FormLetter = "W" | "L" | "T" | "N";
+/** The next scheduled CCC game in a division — the ball not yet bowled. */
+export interface NextFixture {
+  opponent: string;
+  /** CricClubs "YYYY-MM-DD", or null when the fixture has no fixed date. */
+  date: string | null;
+}
 export interface DivisionSnapshot {
   name: string;
   slug: string;
@@ -46,6 +52,8 @@ export interface DivisionSnapshot {
   points: number;
   /** Last up-to-5 completed CCC results in this division, oldest first. */
   form: FormLetter[];
+  /** Soonest unplayed fixture in this division, or null if the season is done. */
+  nextFixture: NextFixture | null;
 }
 /** A completed CCC match from a previous season played around this calendar date. */
 export interface OnThisDay {
@@ -70,8 +78,10 @@ export interface HomeData {
 }
 
 async function buildHomeData(): Promise<HomeData> {
-  const [battingRows, bowlingRows, standings, formMatches, syncAgg, pastMatches, history] =
-    await Promise.all([
+  const [
+    battingRows, bowlingRows, standings, formMatches, syncAgg, pastMatches, history,
+    seasonFixtures,
+  ] = await Promise.all([
     prisma.playerBattingStat.findMany({
       where: { seriesId: { in: SEASON_IDS }, teamName: { in: CCC_TEAM_NAMES } },
     }),
@@ -95,7 +105,32 @@ async function buildHomeData(): Promise<HomeData> {
       },
     }),
     getClubHistoryTotals(),
+    prisma.fixture.findMany({
+      where: { seriesId: { in: SEASON_IDS }, OR: cccFixtureOr },
+      select: {
+        seriesId: true, date: true,
+        teamOneId: true, teamOneName: true, teamTwoId: true, teamTwoName: true,
+      },
+    }),
   ]);
+
+  // Soonest unplayed fixture per division. Fixture.date is CricClubs'
+  // "YYYY-MM-DD", so a plain string compare against today's Chicago date orders
+  // and filters correctly without parsing.
+  const todayChicago = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago",
+  }).format(new Date());
+  const nextBySeries = new Map<number, NextFixture>();
+  for (const f of seasonFixtures
+    .filter((f) => (f.date ?? "") >= todayChicago)
+    .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))) {
+    if (nextBySeries.has(f.seriesId)) continue;
+    const cccIsT1 = isCCCSide(f.teamOneName, f.teamOneId);
+    nextBySeries.set(f.seriesId, {
+      opponent: (cccIsT1 ? f.teamTwoName : f.teamOneName) ?? "",
+      date: f.date ?? null,
+    });
+  }
 
   // Per-division recent form, W/L/T/N from CCC's perspective (raw result strings decide
   // ties/no-results; anything without a winner or tie marker counts as N, not L).
@@ -174,6 +209,7 @@ async function buildHomeData(): Promise<HomeData> {
       lost: row?.lost ?? 0,
       points: row?.points ?? 0,
       form: (formBySeries.get(s.id) ?? []).slice().reverse(), // oldest → newest
+      nextFixture: nextBySeries.get(s.id) ?? null,
     };
   });
 

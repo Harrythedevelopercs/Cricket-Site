@@ -4384,6 +4384,200 @@ div.credsContainer_grph img
   letter-spacing: 0.01em;
 }
 .ds-mono-nums { font-variant-numeric: tabular-nums; }
+
+/* ---------- Scoreboard reel (app/components/ui/ScoreReel.tsx) ----------
+   Big numbers arrive like a manual cricket scoreboard: each digit is a slot
+   holding a 0-9 strip that slides to the right glyph. Sized in `em` so a reel
+   inherits whatever font-size the caller sets. */
+.ccc-reel {
+  display: inline-flex;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ccc-reel-slot {
+  position: relative;
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.ccc-reel-ghost {
+  visibility: hidden;
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+.ccc-reel-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.ccc-reel-strip > span {
+  height: 1em;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ccc-reel-sep {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccc-reel-strip { transition: none !important; }
+}
+
+/* ---------- Cricket-ball form guide (app/components/ui/OverForm.tsx) ----------
+   Leather tones as custom properties so the balls re-skin with the theme. The
+   three stops are highlight / body / shadow of one piece of leather. */
+.ccc-ball {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  --leather-hi: #C0C9D8;
+  --leather:    #71809A;
+  --leather-lo: #3D4759;
+}
+.ccc-ball svg { width: 100%; height: 100%; display: block; }
+.ccc-ball-lbl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+.ccc-ball--w { --leather-hi: #8FE7B8; --leather: #3EA772; --leather-lo: #1B6042; }
+.ccc-ball--l { --leather-hi: #F9A28C; --leather: #D9503A; --leather-lo: #8A2818; }
+.ccc-ball--t { --leather-hi: #DFC894; --leather: #A98A48; --leather-lo: #5E4C24; }
+.ccc-ball--n { --leather-hi: #C0C9D8; --leather: #71809A; --leather-lo: #3D4759; }
+
+/* Deeper leather on the white light-mode panels. */
+:root[data-theme="light"] .ccc-ball--w { --leather-hi: #6FCF9B; --leather: #2E9E6B; --leather-lo: #14563B; }
+:root[data-theme="light"] .ccc-ball--l { --leather-hi: #EF8A70; --leather: #D24A2E; --leather-lo: #7B2314; }
+:root[data-theme="light"] .ccc-ball--t { --leather-hi: #D2B87C; --leather: #967B3F; --leather-lo: #52411F; }
+:root[data-theme="light"] .ccc-ball--n { --leather-hi: #A9B4C6; --leather: #64738C; --leather-lo: #37404F; }
+
+/* The delivery still to come: hollow, and the only thing that pulses. */
+.ccc-ball--next .ccc-ball-lbl { color: var(--orange); text-shadow: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .ccc-ball--next { animation: ccc-ball-wait 2.6s 1s ease-in-out infinite; }
+}
+@keyframes ccc-ball-wait {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50%      { filter: drop-shadow(0 0 5px var(--orange)); }
+}
+
+/* ---------- Innings tape (player profile recent form) ----------
+   A fixed column grid so every row lines up. Each bar sits in an identical-length
+   track, so only the FILL varies and the rows stay symmetrical however uneven the
+   scores are; runs and balls get their own fixed slots with tabular figures. */
+.ccc-tape {
+  border: 1px solid var(--panel-line);
+  border-radius: 2vw;
+  overflow: hidden;
+  background: var(--panel);
+}
+.ccc-tape-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 42px 76px 72px;
+  align-items: center;
+  gap: 2.5vw;
+  padding: 3vw 4vw;
+  border-bottom: 1px solid var(--panel-line);
+  transition: background-color 0.18s ease;
+}
+.ccc-tape-row:last-child { border-bottom: 0; }
+.ccc-tape-row:hover { background: var(--panel-2); }
+.ccc-tape-track { display: none; }
+
+.ccc-tape-res {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 0.72rem;
+  color: #0b1220;
+}
+.ccc-tape-opp { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ccc-tape-opp b {
+  font-family: var(--font-body); font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 3.4vw; line-height: 1.25;
+}
+.ccc-tape-opp s {
+  text-decoration: none; color: var(--text-dim); font-size: 2.6vw; line-height: 1.2;
+}
+.ccc-tape-flag { display: flex; justify-content: center; }
+.ccc-tape-flag em {
+  font-style: normal; font-family: var(--font-display); font-weight: 800;
+  letter-spacing: 0.12em; color: var(--orange);
+  border: 1px solid var(--orange); border-radius: 4px;
+  padding: 1px 5px; white-space: nowrap; font-size: 2.3vw; line-height: 1.35;
+}
+/* display:block matters — as an inline span the track's height collapses and the
+   bar inside (height:100%) resolves to zero. */
+.ccc-tape-bar-wrap {
+  display: block;
+  width: 100%;
+  height: 6px; border-radius: 3px; background: var(--ink-3); overflow: hidden;
+}
+:root[data-theme="light"] .ccc-tape-bar-wrap { background: var(--panel-2); }
+.ccc-tape-bar { display: block; height: 100%; border-radius: 3px; background: var(--orange); }
+
+.ccc-tape-fig {
+  display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.35em;
+  align-items: baseline; font-variant-numeric: tabular-nums;
+}
+.ccc-tape-fig b {
+  font-family: var(--font-display); font-weight: 800; text-align: right;
+  color: var(--text); line-height: 1; font-size: 3.8vw;
+}
+.ccc-tape-fig b i { font-style: normal; color: var(--orange); }
+.ccc-tape-fig s {
+  text-decoration: none; text-align: right; color: var(--text-dim); font-size: 2.6vw;
+}
+.ccc-tape-fig.is-empty b { color: var(--text-dim); }
+
+@media (min-width: 1024px) {
+  .ccc-tape { border-radius: 0.6vw; }
+  .ccc-tape-row {
+    grid-template-columns: 26px minmax(0, 1fr) 46px 128px 96px 88px;
+    gap: 1vw;
+    padding: 0.75vw 1.2vw;
+  }
+  .ccc-tape-track { display: block; }
+  .ccc-tape-opp b { font-size: 0.95vw; }
+  .ccc-tape-opp s { font-size: 0.72vw; }
+  .ccc-tape-flag em { font-size: 0.6vw; }
+  .ccc-tape-fig b { font-size: 1.05vw; }
+  .ccc-tape-fig s { font-size: 0.72vw; }
+}
+
+/* ---------- Leader race rows (records + home leaderboards) ----------
+   A proportional bar behind ranks 2-8 so the chasing pack reads as a chase. */
+.ccc-race { position: relative; isolation: isolate; }
+.ccc-race-bar {
+  position: absolute; left: 0; top: -2px; bottom: -2px;
+  border-radius: 6px; z-index: -1; pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--lake) 24%, transparent),
+    transparent
+  );
+}
 .text-muted { color: var(--text-muted); }
 .text-dim   { color: var(--text-dim); }
 .accent     { color: var(--orange); }

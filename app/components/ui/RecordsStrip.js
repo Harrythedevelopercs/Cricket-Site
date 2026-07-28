@@ -1,54 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import {
-  animate,
-  motion,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-} from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import ChicagoSkyline from "./ChicagoSkyline";
 import ChicagoStar from "./ChicagoStar";
-
-const number = new Intl.NumberFormat("en-US");
+import ScoreReel from "./ScoreReel";
 
 // The home page's long-view counterpoint to the current-season hub. This is a
 // deliberately singular band rather than three generic stat cards: one timeline,
-// one club story, and three live totals that grow with every match.
-function AnimatedTotal({ value, reduce }) {
-  const totalRef = useRef(null);
-  const isInView = useInView(totalRef, { once: true, amount: 0.75 });
-  const count = useMotionValue(reduce ? value : 0);
-  const formattedCount = useTransform(count, (latest) =>
-    number.format(Math.round(latest)),
-  );
-
-  useEffect(() => {
-    if (reduce) {
-      count.jump(value);
-      return undefined;
-    }
-
-    if (!isInView) return undefined;
-
-    const controls = animate(count, value, {
-      duration: 1.25,
-      ease: [0.16, 1, 0.3, 1],
-    });
-
-    return () => controls.stop();
-  }, [count, isInView, reduce, value]);
-
-  return (
-    <dd ref={totalRef} className="ds-num">
-      <motion.span aria-hidden="true">{formattedCount}</motion.span>
-      <span className="sr-only">{number.format(value)}</span>
-    </dd>
-  );
-}
+// one club story, and three live totals that grow with every match. The totals
+// roll in on the shared scoreboard reel (ScoreReel.tsx).
 
 export default function RecordsStrip({ history }) {
   const reduce = useReducedMotion();
@@ -113,7 +74,9 @@ export default function RecordsStrip({ history }) {
                     <span className="ccc-legacy-index" aria-hidden="true">{stat.number}</span>
                     {stat.label}
                   </dt>
-                  <AnimatedTotal value={stat.value} reduce={reduce} />
+                  <dd className="ds-num">
+                    <ScoreReel value={stat.value} />
+                  </dd>
                   <dd className="ccc-legacy-meta">All competitions</dd>
                 </motion.div>
               ))}
