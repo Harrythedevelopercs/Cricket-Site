@@ -6,6 +6,8 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { PlayerProfileSkeleton } from "../../components/skeletons/PageSkeletons";
 import ScoreReel from "../../components/ui/ScoreReel";
+import StumpsCounter from "../../components/ui/StumpsCounter";
+import BoundaryRibbon from "../../components/ui/BoundaryRibbon";
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -57,11 +59,20 @@ export interface Profile {
   error?: string;
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({
+  label,
+  value,
+  stumps = false,
+}: {
+  label: string;
+  value: number;
+  /* Wickets get the bails — the one tile where the sport has its own image. */
+  stumps?: boolean;
+}) {
   return (
     <div className="ccc-card bg-[var(--panel)] border border-[var(--panel-line)] rounded-[2vw] lg:rounded-[0.6vw] p-[4vw] lg:p-[1.2vw] text-center">
       <p className="oswald-bold text-[color:var(--orange)] text-[7vw] lg:text-[2vw] leading-none tabular-nums flex justify-center">
-        <ScoreReel value={value} />
+        {stumps ? <StumpsCounter value={value} /> : <ScoreReel value={value} />}
       </p>
       <p className="roboto-condensed-bold text-[color:var(--text-muted)] uppercase tracking-wider text-[2.6vw] lg:text-[0.72vw] mt-[1.5vw] lg:mt-[0.4vw]">
         {label}
@@ -200,7 +211,7 @@ export default function PlayerProfileClient({
           <Stat label="Matches" value={p.season.matches} />
           <Stat label="Runs" value={p.season.runs} />
           <Stat label="HS" value={p.season.highestScore} />
-          <Stat label="Wickets" value={p.season.wickets} />
+          <Stat label="Wickets" value={p.season.wickets} stumps />
           <Stat label="Sixes" value={p.season.sixes} />
         </div>
 
@@ -305,6 +316,20 @@ export default function PlayerProfileClient({
             <h2 className="oswald-bold text-[color:var(--text)] uppercase text-[5.5vw] lg:text-[1.6vw] mb-[3vw] lg:mb-[1vw]">
               Career <span className="text-[color:var(--orange)]">Batting</span>
             </h2>
+            {/* Where the runs came from, for the format the player has actually
+                played most — the table below can't answer that. */}
+            {(() => {
+              const main = [...p.careerBatting].sort((a, b) => b.runs - a.runs)[0];
+              return main ? (
+                <BoundaryRibbon
+                  runs={main.runs}
+                  fours={main.fours}
+                  sixes={main.sixes}
+                  format={main.format}
+                  innings={main.innings}
+                />
+              ) : null;
+            })()}
             <div className="overflow-x-auto rounded-[2vw] lg:rounded-[0.6vw] border border-[var(--panel-line)] mb-[8vw] lg:mb-[2.5vw] bg-[var(--panel)]">
               <table className="min-w-full">
                 <thead className="bg-[var(--panel-2)]">

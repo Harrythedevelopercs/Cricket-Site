@@ -4566,6 +4566,231 @@ div.credsContainer_grph img
   .ccc-tape-fig s { font-size: 0.72vw; }
 }
 
+/* ---------- Stumps & bails (app/components/ui/StumpsCounter.tsx) ----------
+   Everything is delayed off one impact moment (0.6s) so the ball is visibly the
+   cause. Bails get two nested transforms — X linear, Y up-then-down — to trace a
+   parabola, with the timber spinning inside that. Nothing is armed until the
+   .play class lands, and .play is never added under reduced motion. */
+/* The timber sits BEHIND the number as a watermark, so the wickets tile keeps its
+   number on the same baseline as its neighbours in the stat grid. Only the
+   transient parts — ball, bails, dust, impact — play at full strength, reading as
+   a flash of motion across the tile rather than a second graphic competing with
+   the figure. */
+.ccc-stumps {
+  position: relative; display: inline-flex;
+  align-items: center; justify-content: center;
+}
+/* sat slightly high so the timber stays behind the figure and clear of the
+   tile's label underneath */
+.ccc-stumps-art {
+  position: absolute; left: 50%; top: 42%;
+  transform: translate(-50%, -50%);
+  width: 12vw; aspect-ratio: 122 / 158;
+  pointer-events: none; z-index: 0;
+}
+.ccc-stumps-art svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.ccc-stumps-fig {
+  position: relative; z-index: 1;
+  font-family: var(--font-display); font-weight: 800; line-height: 1;
+}
+@media (min-width: 1024px) { .ccc-stumps-art { width: 3.2vw; } }
+
+/* watermark strength — the transient parts stay at full opacity */
+.ccc-stump { transform-box: fill-box; transform-origin: bottom center; opacity: 0.3; }
+.ccc-stumps.play .ccc-stump { animation: ccc-stump-hit 0.85s cubic-bezier(0.32, 0.9, 0.4, 1) both; }
+/* struck stump reacts first */
+.ccc-stumps.play .ccc-stump-3 { animation-delay: 0.58s; }
+.ccc-stumps.play .ccc-stump-2 { animation-delay: 0.60s; }
+.ccc-stumps.play .ccc-stump-1 { animation-delay: 0.62s; }
+@keyframes ccc-stump-hit {
+  0%   { transform: rotate(0); }
+  16%  { transform: rotate(-7deg); }
+  40%  { transform: rotate(4deg); }
+  62%  { transform: rotate(-2deg); }
+  82%  { transform: rotate(0.8deg); }
+  100% { transform: rotate(0); }
+}
+
+.ccc-bail-x, .ccc-bail-y, .ccc-bail { transform-box: fill-box; transform-origin: center; }
+.ccc-stumps.play .ccc-bail-x { animation: ccc-bail-x 1.2s 0.6s cubic-bezier(0.2, 0.6, 0.5, 1) both; }
+.ccc-stumps.play .ccc-bail-y { animation: ccc-bail-y 1.2s 0.6s linear both; }
+.ccc-stumps.play .ccc-bail   { animation: ccc-bail-spin 1.2s 0.6s linear both; }
+@keyframes ccc-bail-x { to { transform: translateX(var(--bx)); } }
+@keyframes ccc-bail-y {
+  0%   { transform: translateY(0); opacity: 1; }
+  44%  { transform: translateY(var(--by)); }
+  100% { transform: translateY(52px); opacity: 0; }
+}
+@keyframes ccc-bail-spin { to { transform: rotate(var(--br)); } }
+
+.ccc-cricball { transform-box: fill-box; transform-origin: center; }
+.ccc-stumps.play .ccc-cricball { animation: ccc-ball-strike 1.5s cubic-bezier(0.42, 0.04, 0.62, 0.6) both; }
+@keyframes ccc-ball-strike {
+  0%   { transform: translate(126px, -62px) rotate(0); opacity: 0; }
+  10%  { opacity: 1; }
+  40%  { transform: translate(0, 0) rotate(430deg); opacity: 1; }
+  100% { transform: translate(-58px, 62px) rotate(720deg); opacity: 0; }
+}
+/* the ball is only ever visible mid-flight */
+.ccc-cricball { opacity: 0; }
+
+.ccc-impact { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.ccc-stumps.play .ccc-impact { animation: ccc-impact-ring 0.55s 0.6s ease-out both; }
+@keyframes ccc-impact-ring {
+  0%   { opacity: 0.8; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+.ccc-dust { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.ccc-stumps.play .ccc-dust { animation: ccc-dust-out 0.8s 0.6s ease-out both; }
+@keyframes ccc-dust-out {
+  0%   { opacity: 0.55; transform: translate(0, 0) scale(0.35); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.6); }
+}
+
+/* ---------- Miles between the wickets (RecordsStrip.js) ---------- */
+.ccc-miles { margin: 5vw 0 4vw; }
+.ccc-miles-fig {
+  font-family: var(--font-display); font-weight: 800; line-height: 0.9;
+  font-size: clamp(2.6rem, 9vw, 4rem); color: var(--orange);
+  text-shadow: 0 0 34px var(--glow); margin: 0;
+}
+.ccc-miles-unit {
+  display: block; font-size: 0.28em; letter-spacing: 0.1em; font-weight: 600;
+  color: var(--text-muted); text-shadow: none; margin-top: 0.5em;
+  font-family: var(--font-body); text-transform: uppercase;
+}
+.ccc-miles-track { position: relative; height: 3px; margin-top: 3vw; }
+.ccc-miles-rail {
+  position: absolute; inset: 0; border-radius: 2px;
+  background: linear-gradient(90deg, var(--panel-line-strong), var(--lake-dim));
+}
+.ccc-miles-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px;
+  background: linear-gradient(90deg, var(--lake), var(--orange));
+}
+.ccc-miles-note {
+  margin: 2vw 0 0; font-size: 3vw; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 1024px) {
+  .ccc-miles { margin: 1.5vw 0 1.2vw; }
+  .ccc-miles-track { margin-top: 0.8vw; }
+  .ccc-miles-note { margin-top: 0.5vw; font-size: 0.8vw; }
+}
+
+/* ---------- Boundary ribbon (app/components/ui/BoundaryRibbon.tsx) ---------- */
+.ccc-ribbon-shell { margin-bottom: 4vw; }
+.ccc-ribbon-head {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 3vw; flex-wrap: wrap; margin-bottom: 2.5vw;
+}
+.ccc-ribbon {
+  display: flex; height: 13vw; border-radius: 2vw; overflow: hidden;
+  border: 1px solid var(--panel-line-strong);
+}
+.ccc-rseg {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 0; overflow: hidden; position: relative;
+}
+.ccc-rseg b {
+  font-family: var(--font-display); font-weight: 800; line-height: 1;
+  font-size: 3.8vw; color: #0b1220;
+}
+.ccc-rseg s {
+  text-decoration: none; font-size: 2.2vw; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(11, 18, 32, 0.72); white-space: nowrap;
+}
+.ccc-rseg--six  { background: var(--orange); }
+.ccc-rseg--four { background: var(--orange-deep); }
+.ccc-rseg--run  { background: var(--lake-deep); }
+.ccc-rseg--four b, .ccc-rseg--run b { color: #F4F0E8; }
+.ccc-rseg--four s, .ccc-rseg--run s { color: rgba(244, 240, 232, 0.8); }
+@media (min-width: 1024px) {
+  .ccc-ribbon-shell { margin-bottom: 1.4vw; }
+  .ccc-ribbon-head { gap: 1vw; margin-bottom: 0.7vw; }
+  .ccc-ribbon { height: 3.4vw; border-radius: 0.5vw; }
+  .ccc-rseg b { font-size: 1.05vw; }
+  .ccc-rseg s { font-size: 0.6vw; }
+}
+
+/* ---------- Milestone gates (app/components/ui/MilestoneGates.tsx) ---------- */
+.ccc-gate-group { margin-bottom: 7vw; }
+.ccc-gate-list { display: flex; flex-direction: column; gap: 4.5vw; margin: 0; padding: 0; list-style: none; }
+.ccc-gate-head {
+  display: flex; align-items: center; gap: 2.5vw; margin-bottom: 2vw;
+}
+.ccc-gate-pic {
+  position: relative; width: 8vw; height: 8vw; border-radius: 50%;
+  overflow: hidden; flex: none; background: var(--panel-2);
+}
+.ccc-gate-name {
+  flex: 1; min-width: 0; font-weight: 600; color: var(--text); font-size: 3.6vw;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color 0.18s ease;
+}
+.ccc-gate-head:hover .ccc-gate-name { color: var(--orange); }
+.ccc-gate-total {
+  flex: none; font-family: var(--font-display); font-weight: 800;
+  color: var(--orange); font-size: 4.6vw; line-height: 1;
+  display: inline-flex; align-items: baseline; gap: 0.35em;
+}
+.ccc-gate-total i {
+  font-style: normal; font-family: var(--font-body); font-weight: 700;
+  font-size: 0.4em; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ccc-gate-track {
+  position: relative; height: 9vw; border-radius: 1.6vw;
+  background: var(--ink-3); border: 1px solid var(--panel-line); overflow: hidden;
+}
+:root[data-theme="light"] .ccc-gate-track { background: var(--panel-2); }
+.ccc-gate-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 1.5vw;
+  background: linear-gradient(90deg, var(--lake-deep), var(--orange));
+}
+.ccc-gate {
+  position: absolute; top: 0; bottom: 0; width: 2px; z-index: 2;
+  background: var(--panel-line-strong); transition: background-color 0.25s ease;
+}
+.ccc-gate i {
+  position: absolute; top: 0.6vw; left: 1.2vw; font-style: normal;
+  font-size: 2.4vw; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--text-dim); white-space: nowrap; transition: color 0.25s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+/* label flips inside for gates near the end, which the track would clip */
+.ccc-gate--end i { left: auto; right: 1.2vw; }
+.ccc-gate.hit { background: var(--orange-bright); }
+/* a crossed gate's label sits ON the filled bar, so it goes light, not orange */
+.ccc-gate.hit i { color: #FFF3E8; }
+:root[data-theme="light"] .ccc-gate i { text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6); }
+:root[data-theme="light"] .ccc-gate.hit i { color: #2A1405; text-shadow: none; }
+.ccc-gate-spark {
+  position: absolute; top: 50%; left: 0; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--orange); opacity: 0; z-index: 3;
+  pointer-events: none; animation: ccc-gate-spark 0.6s ease-out both;
+}
+@keyframes ccc-gate-spark {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccc-gate-spark { display: none; }
+}
+@media (min-width: 1024px) {
+  .ccc-gate-group { margin-bottom: 2.4vw; }
+  .ccc-gate-list { gap: 1.4vw; }
+  .ccc-gate-head { gap: 0.7vw; margin-bottom: 0.5vw; }
+  .ccc-gate-pic { width: 2.2vw; height: 2.2vw; }
+  .ccc-gate-name { font-size: 0.95vw; }
+  .ccc-gate-total { font-size: 1.3vw; }
+  .ccc-gate-track { height: 2.4vw; border-radius: 0.4vw; }
+  .ccc-gate-bar { border-radius: 0.38vw; }
+  .ccc-gate i { top: 0.18vw; left: 0.35vw; font-size: 0.62vw; }
+}
+
 /* ---------- Leader race rows (records + home leaderboards) ----------
    A proportional bar behind ranks 2-8 so the chasing pack reads as a chase. */
 .ccc-race { position: relative; isolation: isolate; }

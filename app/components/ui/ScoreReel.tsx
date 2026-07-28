@@ -23,6 +23,7 @@ export default function ScoreReel({
   group = true,
   stagger = 0.075,
   duration = 1.35,
+  delay = 0,
 }: {
   value: number;
   className?: string;
@@ -32,6 +33,9 @@ export default function ScoreReel({
   stagger?: number;
   /** Seconds for a single digit's roll. */
   duration?: number;
+  /** Seconds before the first digit moves — lets a caller sync the roll to
+      another beat, e.g. the moment a ball hits the stumps. */
+  delay?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.6 });
@@ -52,7 +56,7 @@ export default function ScoreReel({
             </span>
           );
         }
-        const delay = digitIndex * stagger;
+        const digitDelay = delay + digitIndex * stagger;
         digitIndex += 1;
         return (
           <span key={i} className="ccc-reel-slot" aria-hidden="true">
@@ -64,7 +68,7 @@ export default function ScoreReel({
               style={{
                 transform: `translateY(-${rolled ? Number(ch) : 0}em)`,
                 transitionDuration: reduce ? "0s" : `${duration}s`,
-                transitionDelay: reduce ? "0s" : `${delay}s`,
+                transitionDelay: reduce ? "0s" : `${digitDelay}s`,
               }}
             >
               {DIGITS.map((d) => (

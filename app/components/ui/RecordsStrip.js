@@ -11,6 +11,42 @@ import ScoreReel from "./ScoreReel";
 // one club story, and three live totals that grow with every match. The totals
 // roll in on the shared scoreboard reel (ScoreReel.tsx).
 
+// A run isn't an abstraction — it's 22 yards, run in Chicago heat. Multiplying
+// the club's total by the length of a pitch is the only figure on the page that
+// makes the effort physical.
+//
+// Deliberately no "that's Chicago to <city>" line: the arithmetic below is exact,
+// a city comparison would be a claim we haven't verified. Left as a copy decision.
+const YARDS_PER_RUN = 22;
+const YARDS_PER_MILE = 1760;
+
+function MilesRun({ runs, reduce }) {
+  if (!runs || runs <= 0) return null;
+  const miles = Math.round((runs * YARDS_PER_RUN) / YARDS_PER_MILE);
+
+  return (
+    <div className="ccc-miles">
+      <p className="ccc-miles-fig">
+        <ScoreReel value={miles} duration={1.6} />
+        <span className="ccc-miles-unit">miles between the wickets</span>
+      </p>
+      <div className="ccc-miles-track" aria-hidden="true">
+        <span className="ccc-miles-rail" />
+        <motion.span
+          className="ccc-miles-fill"
+          initial={reduce ? false : { width: 0 }}
+          whileInView={{ width: "100%" }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 1.9, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
+      <p className="ccc-miles-note">
+        {runs.toLocaleString()} runs &times; {YARDS_PER_RUN} yards &mdash; every one of them run.
+      </p>
+    </div>
+  );
+}
+
 export default function RecordsStrip({ history }) {
   const reduce = useReducedMotion();
   if (!history) return null;
@@ -47,6 +83,7 @@ export default function RecordsStrip({ history }) {
               <h2 id="club-legacy-title" className="ds-display ccc-legacy-title">
                 Every innings<br />adds to the <span>story.</span>
               </h2>
+              <MilesRun runs={history.runs} reduce={reduce} />
               <p className="ccc-legacy-copy">
                 Season after season since {history.since}, every innings adds another
                 line to our Chicago story.

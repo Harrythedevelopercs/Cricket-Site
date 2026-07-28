@@ -11,6 +11,9 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "../db/prisma";
 import { TRACKED_SERIES, TRACKED_SERIES_IDS } from "../cricclubs/config";
 import { isCCCSide } from "./ccc";
+// Milestone ladders live in their own import-free module so the client can draw
+// the same gates without pulling Prisma (below) into the browser bundle.
+import { RUN_THRESHOLDS, WICKET_THRESHOLDS } from "./milestones";
 
 const IMG = "https://media.cricclubs.com";
 const img = (p?: string | null) =>
@@ -21,9 +24,6 @@ const fullName = (f?: string | null, l?: string | null) =>
 const YEAR_BY_SERIES = new Map(TRACKED_SERIES.map((s) => [s.id, s.year]));
 const SEASON_YEARS = [...new Set(TRACKED_SERIES.map((s) => s.year))].sort();
 
-/** Milestone ladders — the highest threshold crossed wins. */
-const RUN_THRESHOLDS = [1500, 1000, 500];
-const WICKET_THRESHOLDS = [75, 50, 25];
 /** Best-economy qualification: at least 10 overs (60 balls) bowled in the season. */
 const MIN_ECONOMY_BALLS = 60;
 
