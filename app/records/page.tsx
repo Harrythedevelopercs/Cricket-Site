@@ -13,11 +13,12 @@ import type { ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Skel } from '../components/skeletons/PageSkeletons'
 import ScoreReel from '../components/ui/ScoreReel'
+import MilestoneGates from '../components/ui/MilestoneGates'
 import { usePageTitle } from '../lib/usePageTitle'
+import { RUN_THRESHOLDS, WICKET_THRESHOLDS } from '../lib/data/milestones'
 import type {
   CareerLeader,
   ClubRecords,
-  MilestoneEntry,
   SeasonBestItem,
   SeasonBests,
 } from '../lib/data/records'
@@ -210,38 +211,6 @@ function SeasonCard({ s }: { s: SeasonBests }) {
   )
 }
 
-/* One milestone pill in the strip. */
-function MilestonePill({ m }: { m: MilestoneEntry }) {
-  return (
-    <Link
-      href={`/players/${m.playerId}`}
-      className="group flex items-center gap-[3vw] lg:gap-[0.8vw] rounded-full border border-[var(--panel-line)] bg-[var(--panel)] py-[1.5vw] pl-[2vw] pr-[4.5vw] lg:py-[0.4vw] lg:pl-[0.5vw] lg:pr-[1.2vw] transition-colors hover:border-[var(--orange)]"
-    >
-      <div className="relative w-[9vw] h-[9vw] lg:w-[2.2vw] lg:h-[2.2vw] rounded-full overflow-hidden shrink-0 bg-[var(--panel-2)]">
-        <Image
-          src={m.pic || FALLBACK_PIC}
-          alt={m.name}
-          fill
-          sizes="36px"
-          className="object-cover"
-          unoptimized
-        />
-      </div>
-      <div className="min-w-0">
-        <p className="roboto-condensed-bold text-[color:var(--text)] text-[3.4vw] lg:text-[0.92vw] leading-tight truncate">
-          {m.name}
-        </p>
-        <p className="roboto-condensed-bold uppercase tracking-wider text-[color:var(--orange)] text-[2.5vw] lg:text-[0.66vw]">
-          {m.threshold.toLocaleString()}+ club {m.kind}
-        </p>
-      </div>
-      <p className="ds-num text-[color:var(--text)] text-[4.2vw] lg:text-[1.1vw] pl-[2vw] lg:pl-[0.6vw] shrink-0">
-        {m.total.toLocaleString()}
-      </p>
-    </Link>
-  )
-}
-
 /* Loading skeleton mirroring the page layout (leader tables → season grid → strip). */
 function RecordsSkeleton() {
   return (
@@ -366,10 +335,19 @@ export default function Page() {
                   careers will appear here.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-[3vw] lg:gap-[0.9vw]">
-                  {records.milestones.map((m) => (
-                    <MilestonePill key={`${m.kind}-${m.playerId}`} m={m} />
-                  ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2vw] lg:gap-[2.4vw]">
+                  <MilestoneGates
+                    title="Run milestones"
+                    unit="runs"
+                    gates={RUN_THRESHOLDS}
+                    entries={records.milestones.filter((m) => m.kind === 'runs')}
+                  />
+                  <MilestoneGates
+                    title="Wicket milestones"
+                    unit="wkts"
+                    gates={WICKET_THRESHOLDS}
+                    entries={records.milestones.filter((m) => m.kind === 'wickets')}
+                  />
                 </div>
               )}
             </>
