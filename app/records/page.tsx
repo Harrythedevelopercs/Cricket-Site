@@ -10,7 +10,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Skel } from '../components/skeletons/PageSkeletons'
+import ScoreReel from '../components/ui/ScoreReel'
 import { usePageTitle } from '../lib/usePageTitle'
 import type {
   CareerLeader,
@@ -22,6 +24,7 @@ import type {
 
 const FALLBACK_PIC = '/images/sample_player_image.png'
 const seasonsLabel = (n: number) => `${n} ${n === 1 ? 'season' : 'seasons'}`
+const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
 function SectionHeading({ children, sub }: { children: ReactNode; sub?: string }) {
   return (
@@ -52,6 +55,8 @@ function LeaderTable({
   unit: string
   leaders: CareerLeader[]
 }) {
+  const reduce = useReducedMotion()
+  const top = Math.max(1, leaders[0]?.value ?? 1)
   return (
     <div className="ccc-card rounded-[3vw] lg:rounded-[0.7vw] p-[5vw] lg:p-[1.6vw]">
       <p className="roboto-condensed-bold text-[color:var(--orange)] uppercase tracking-wider text-[3.4vw] lg:text-[1vw] mb-[4vw] lg:mb-[1.2vw]">
@@ -88,8 +93,8 @@ function LeaderTable({
               </p>
             </div>
             <div className="text-right shrink-0">
-              <p className="ds-num text-[color:var(--orange)] text-[8vw] lg:text-[2.4vw] leading-none">
-                {leaders[0].value.toLocaleString()}
+              <p className="ds-num text-[color:var(--orange)] text-[8vw] lg:text-[2.4vw] leading-none flex justify-end">
+                <ScoreReel value={leaders[0].value} />
               </p>
               <p className="roboto-condensed-regular text-[color:var(--text-muted)] uppercase text-[2.4vw] lg:text-[0.7vw]">
                 {unit}
@@ -97,10 +102,19 @@ function LeaderTable({
             </div>
           </Link>
 
-          {/* Ranks 2–8 */}
+          {/* Ranks 2–8 — each row carries a bar proportional to the leader's
+              total, so the chasing pack reads as a chase rather than a list. */}
           <ul className="flex flex-col gap-[2.5vw] lg:gap-[0.7vw]">
             {leaders.slice(1).map((p, i) => (
-              <li key={p.playerId}>
+              <li key={p.playerId} className="ccc-race">
+                <motion.span
+                  className="ccc-race-bar"
+                  aria-hidden="true"
+                  initial={reduce ? false : { width: 0 }}
+                  whileInView={{ width: `${(p.value / top) * 100}%` }}
+                  viewport={{ once: true, amount: 0.6 }}
+                  transition={{ duration: 1.1, delay: reduce ? 0 : i * 0.08, ease: EASE }}
+                />
                 <Link
                   href={`/players/${p.playerId}`}
                   className="group flex items-center gap-[3vw] lg:gap-[0.8vw]"

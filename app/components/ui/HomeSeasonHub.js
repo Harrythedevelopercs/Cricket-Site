@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import RecordsStrip from "./RecordsStrip";
+import ScoreReel from "./ScoreReel";
+import OverForm from "./OverForm";
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -29,41 +32,11 @@ function SectionHeading({ children, sub }) {
   );
 }
 
-// Recent-form strip: one square per completed match, oldest → newest.
-// Reads like a football form guide — a cricket-club fact, not a stat card.
-const FORM_STYLE = {
-  W: { bg: "var(--win)", label: "Won" },
-  L: { bg: "var(--loss)", label: "Lost" },
-  T: { bg: "var(--text-dim)", label: "Tied" },
-  N: { bg: "var(--panel-line)", label: "No result" },
-};
-function FormStrip({ form }) {
-  if (!form || form.length === 0) return null;
-  return (
-    <div
-      className="flex items-center gap-[1.4vw] lg:gap-[0.35vw] mt-[3vw] lg:mt-[1vw]"
-      aria-label={`Recent form: ${form.map((f) => FORM_STYLE[f]?.label ?? f).join(", ")}`}
-    >
-      <span className="roboto-condensed-bold text-[color:var(--text-dim)] uppercase tracking-wider text-[2.6vw] lg:text-[0.7vw] mr-[1vw] lg:mr-[0.3vw]">
-        Form
-      </span>
-      {form.map((f, i) => (
-        <span
-          key={i}
-          title={FORM_STYLE[f]?.label ?? f}
-          className="oswald-bold text-white leading-none rounded-[1vw] lg:rounded-[0.25vw] w-[5.4vw] h-[5.4vw] lg:w-[1.4vw] lg:h-[1.4vw] flex items-center justify-center text-[3vw] lg:text-[0.75vw]"
-          style={{ backgroundColor: FORM_STYLE[f]?.bg ?? "var(--panel-line)", opacity: i === form.length - 1 ? 1 : 0.75 }}
-        >
-          {f}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function PerformerList({ title, unit, players }) {
+  const reduce = useReducedMotion();
   if (!players || players.length === 0) return null;
   const [lead, ...rest] = players;
+  const top = Math.max(1, lead.value);
   return (
     <div className="ccc-card rounded-[3vw] lg:rounded-[0.7vw] p-[5vw] lg:p-[1.6vw]">
       <p className="roboto-condensed-bold text-[color:var(--orange)] uppercase tracking-wider text-[3.4vw] lg:text-[1vw] mb-[4vw] lg:mb-[1.2vw]">
@@ -90,8 +63,8 @@ function PerformerList({ title, unit, players }) {
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="oswald-bold text-[color:var(--orange)] text-[8vw] lg:text-[2.4vw] leading-none">
-            {lead.value}
+          <p className="oswald-bold text-[color:var(--orange)] text-[8vw] lg:text-[2.4vw] leading-none flex justify-end">
+            <ScoreReel value={lead.value} />
           </p>
           <p className="roboto-condensed-regular text-[color:var(--text-muted)] uppercase text-[2.4vw] lg:text-[0.7vw]">
             {unit}
@@ -101,7 +74,15 @@ function PerformerList({ title, unit, players }) {
 
       <ul className="flex flex-col gap-[2.5vw] lg:gap-[0.7vw]">
         {rest.map((p, i) => (
-          <li key={i} className="flex items-center gap-[3vw] lg:gap-[0.8vw]">
+          <li key={i} className="ccc-race flex items-center gap-[3vw] lg:gap-[0.8vw]">
+            <motion.span
+              className="ccc-race-bar"
+              aria-hidden="true"
+              initial={reduce ? false : { width: 0 }}
+              whileInView={{ width: `${(p.value / top) * 100}%` }}
+              viewport={{ once: true, amount: 0.6 }}
+              transition={{ duration: 1.1, delay: reduce ? 0 : i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            />
             <span className="roboto-condensed-bold text-[color:var(--text-dim)] w-[5vw] lg:w-[1.4vw] text-center text-[3.2vw] lg:text-[0.9vw]">
               {i + 2}
             </span>
@@ -156,7 +137,7 @@ function DivisionCard({ d }) {
             <span className="text-[color:var(--text)] roboto-condensed-bold">{d.points}</span> Pts
           </span>
         </div>
-        <FormStrip form={d.form} />
+        <OverForm form={d.form} next={d.nextFixture} />
         <p className="roboto-condensed-bold text-[color:var(--orange)] text-[3vw] lg:text-[0.8vw] uppercase mt-[4vw] lg:mt-[1vw] tracking-wider group-hover:underline">
           View table →
         </p>

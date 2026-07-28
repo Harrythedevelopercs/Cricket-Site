@@ -3,7 +3,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { PlayerProfileSkeleton } from "../../components/skeletons/PageSkeletons";
+import ScoreReel from "../../components/ui/ScoreReel";
+
+const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 interface BattingRow {
   format: string;
@@ -53,16 +57,30 @@ export interface Profile {
   error?: string;
 }
 
-function Stat({ label, value }: { label: string; value: ReactNode }) {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="ccc-card bg-[var(--panel)] border border-[var(--panel-line)] rounded-[2vw] lg:rounded-[0.6vw] p-[4vw] lg:p-[1.2vw] text-center">
-      <p className="oswald-bold text-[color:var(--orange)] text-[7vw] lg:text-[2vw] leading-none tabular-nums">{value}</p>
+      <p className="oswald-bold text-[color:var(--orange)] text-[7vw] lg:text-[2vw] leading-none tabular-nums flex justify-center">
+        <ScoreReel value={value} />
+      </p>
       <p className="roboto-condensed-bold text-[color:var(--text-muted)] uppercase tracking-wider text-[2.6vw] lg:text-[0.72vw] mt-[1.5vw] lg:mt-[0.4vw]">
         {label}
       </p>
     </div>
   );
 }
+/* The one thing worth shouting about in an innings — a hundred, a fifty, or a
+   multi-wicket haul. Batting milestone wins when a player did both. */
+function inningsFlag(f: RecentFormEntry): string | null {
+  const runs = f.batting?.runs ?? 0;
+  const wkts = f.bowling?.wickets ?? 0;
+  if (runs >= 100) return "TON";
+  if (runs >= 50) return "50";
+  if (wkts >= 5) return "5W";
+  if (wkts >= 4) return "4W";
+  return null;
+}
+
 function Th({ children }: { children: ReactNode }) {
   return (
     <th className="roboto-condensed-bold text-[color:var(--orange)] uppercase text-left px-[2vw] lg:px-[0.7vw] py-[2vw] lg:py-[0.6vw] text-[2.6vw] lg:text-[0.78vw] whitespace-nowrap">
@@ -91,6 +109,7 @@ export default function PlayerProfileClient({
 }) {
   const [p, setP] = useState<Profile | null>(initialProfile);
   const [loading, setLoading] = useState(initialProfile === null);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     // The server page passes the profile when Neon answered; fetch only as a fallback.
@@ -191,43 +210,91 @@ export default function PlayerProfileClient({
             <h2 className="oswald-bold text-[color:var(--text)] uppercase text-[5.5vw] lg:text-[1.6vw] mb-[3vw] lg:mb-[1vw]">
               Recent <span className="text-[color:var(--orange)]">Form</span>
             </h2>
-            <div className="mb-[8vw] overflow-hidden rounded-[2vw] border border-[var(--panel-line)] bg-[var(--panel)] lg:mb-[2.5vw] lg:rounded-[0.6vw]">
-              {p.recentForm.map((f) => (
-                <Link
-                  key={f.matchId}
-                  href={`/match/${f.matchId}`}
-                  className="group flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--panel-line)] px-4 py-3 transition-colors last:border-b-0 hover:bg-[var(--panel-2)] lg:px-6 lg:py-3.5"
-                >
-                  {f.won !== null ? (
-                    <span
-                      aria-label={f.won ? "Won" : "Lost"}
-                      className="roboto-condensed-bold flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.7rem] text-[#0b1220]"
-                      style={{ background: f.won ? "var(--win)" : "var(--loss)" }}
+            <div className="ccc-tape mb-[8vw] lg:mb-[2.5vw]">
+              {(() => {
+                // Bars are relative to this player's best innings in the window, so a
+                // century can never look the same size as a nine.
+                const best = Math.max(1, ...p.recentForm.map((f) => f.batting?.runs ?? 0));
+                return p.recentForm.map((f, i) => {
+                  const flag = inningsFlag(f);
+                  const pct = f.batting ? (f.batting.runs / best) * 100 : 0;
+                  return (
+                    <motion.div
+                      key={f.matchId}
+                      initial={reduce ? false : { opacity: 0, y: 12 }}
+                      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.5 }}
+                      transition={{ duration: 0.45, delay: reduce ? 0 : i * 0.09, ease: EASE }}
                     >
-                      {f.won ? "W" : "L"}
-                    </span>
-                  ) : (
-                    <span aria-hidden="true" className="h-6 w-6 shrink-0" />
-                  )}
-                  <span className="roboto-condensed-regular shrink-0 text-[0.78rem] text-[color:var(--text-dim)] lg:w-24 lg:text-[0.85rem]">
-                    {f.date}
-                  </span>
-                  <span className="roboto-condensed-bold min-w-0 flex-1 truncate text-[0.85rem] uppercase text-[color:var(--text)] lg:text-[0.95rem]">
-                    vs {f.opponent}
-                  </span>
-                  <span className="flex basis-full items-center gap-4 pl-10 lg:basis-auto lg:pl-0">
-                    <span className="roboto-condensed-regular text-[0.82rem] tabular-nums text-[color:var(--text-muted)] lg:text-[0.9rem]">
-                      <span className="text-[color:var(--text-dim)]">Bat </span>
-                      {f.batting ? `${f.batting.runs}${f.batting.notOut ? "*" : ""} (${f.batting.balls})` : "—"}
-                    </span>
-                    <span className="roboto-condensed-regular text-[0.82rem] tabular-nums text-[color:var(--text-muted)] lg:text-[0.9rem]">
-                      <span className="text-[color:var(--text-dim)]">Bowl </span>
-                      {f.bowling ? `${f.bowling.wickets}/${f.bowling.runs} (${f.bowling.overs})` : "—"}
-                    </span>
-                    <span aria-hidden="true" className="ml-auto shrink-0 text-[color:var(--orange)] transition-transform group-hover:translate-x-1">→</span>
-                  </span>
-                </Link>
-              ))}
+                      <Link href={`/match/${f.matchId}`} className="ccc-tape-row">
+                        {f.won !== null ? (
+                          <span
+                            aria-label={f.won ? "Won" : "Lost"}
+                            className="ccc-tape-res"
+                            style={{ background: f.won ? "var(--win)" : "var(--loss)" }}
+                          >
+                            {f.won ? "W" : "L"}
+                          </span>
+                        ) : (
+                          <span aria-hidden="true" className="ccc-tape-res" style={{ background: "var(--text-dim)" }} />
+                        )}
+
+                        <span className="ccc-tape-opp">
+                          <b>vs {f.opponent}</b>
+                          <s>{f.date}</s>
+                        </span>
+
+                        <span className="ccc-tape-flag">{flag ? <em>{flag}</em> : null}</span>
+
+                        <span className="ccc-tape-track">
+                          <span className="ccc-tape-bar-wrap">
+                            <motion.span
+                              className="ccc-tape-bar"
+                              initial={reduce ? false : { width: 0 }}
+                              whileInView={{ width: `${pct}%` }}
+                              viewport={{ once: true, amount: 0.5 }}
+                              transition={{ duration: 0.9, delay: reduce ? 0 : 0.2 + i * 0.09, ease: EASE }}
+                            />
+                          </span>
+                        </span>
+
+                        <span className={`ccc-tape-fig${f.batting ? "" : " is-empty"}`}>
+                          {f.batting ? (
+                            <>
+                              <b>
+                                {f.batting.runs}
+                                {f.batting.notOut ? <i>*</i> : null}
+                              </b>
+                              <s>({f.batting.balls})</s>
+                            </>
+                          ) : (
+                            <>
+                              <b>—</b>
+                              <s>bat</s>
+                            </>
+                          )}
+                        </span>
+
+                        <span className={`ccc-tape-fig${f.bowling ? "" : " is-empty"}`}>
+                          {f.bowling ? (
+                            <>
+                              <b>
+                                {f.bowling.wickets}/{f.bowling.runs}
+                              </b>
+                              <s>({f.bowling.overs})</s>
+                            </>
+                          ) : (
+                            <>
+                              <b>—</b>
+                              <s>bowl</s>
+                            </>
+                          )}
+                        </span>
+                      </Link>
+                    </motion.div>
+                  );
+                });
+              })()}
             </div>
           </>
         ) : null}

@@ -29,3 +29,15 @@ export const cccMatchOr: Prisma.MatchWhereInput[] = [
   { teamOneId: { in: CCC_ALT_TEAM_IDS } },
   { teamTwoId: { in: CCC_ALT_TEAM_IDS } },
 ];
+
+/** Same selector against the fixtures table (identical team columns). */
+export const cccFixtureOr: Prisma.FixtureWhereInput[] = [
+  { teamOneName: CCC_NAME },
+  { teamTwoName: CCC_NAME },
+  { teamOneName: "Club Cricket Of Chicago Seekers" },
+  { teamTwoName: "Club Cricket Of Chicago Seekers" },
+  { teamOneName: "CCC Stars" },
+  { teamTwoName: "CCC Stars" },
+  { teamOneId: { in: CCC_ALT_TEAM_IDS } },
+  { teamTwoId: { in: CCC_ALT_TEAM_IDS } },
+];
