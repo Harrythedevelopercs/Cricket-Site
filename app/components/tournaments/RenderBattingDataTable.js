@@ -1,70 +1,26 @@
 "use client";
 
-import React from "react";
+import StatTable from "./StatTable";
 
-function DataBattingTableHeader() {
-  return (
-    <thead>
-      <tr>
-        <th style={{ width: "4%", textAlign: "center" }} className="p5 white_color">
-          #
-        </th>
-        <th style={{ width: "6%", textAlign: "center" }} className="p5 white_color border_th">
-          Rank
-        </th>
-        <th style={{ width: "21%", textAlign: "left" }} className="p5 white_color">
-          Player
-        </th>
-        <th className="p5 white_color border_th">Mat</th>
-        <th className="p5 white_color border_th">Ins</th>
-        <th className="p5 white_color border_th">BF</th>
-        <th className="p5 white_color border_th">Rns</th>
-        <th className="p5 white_color border_th">4s</th>
-        <th className="p5 white_color border_th">6s</th>
-        <th className="p5 white_color border_th">50s</th>
-        <th className="p5 white_color border_th">100s</th>
-        <th className="p5 white_color border_th">NO</th>
-        <th className="p5 white_color border_th">HS</th>
-      </tr>
-    </thead>
-  );
-}
-
-function DataBattingTableRow({ tableRow, indexVal }) {
-  return (
-    <tr>
-      <td style={{ width: "4%", textAlign: "center" }} className="p5 white_color">
-        {indexVal + 1}
-      </td>
-      <td style={{ width: "6%", textAlign: "center" }} className="p5 white_color">
-        {tableRow.rank ?? "-"}
-      </td>
-      <td style={{ width: "21%", textAlign: "left" }} className="p5 white_color">
-        {tableRow.firstName} {tableRow.lastName}
-      </td>
-      <td className="p5 white_color">{tableRow.matches}</td>
-      <td className="p5 white_color">{tableRow.innings}</td>
-      <td className="p5 white_color">{tableRow.ballsFaced}</td>
-      <td className="p5 white_color">{tableRow.runsScored}</td>
-      <td className="p5 white_color">{tableRow.fours}</td>
-      <td className="p5 white_color">{tableRow.sixers}</td>
-      <td className="p5 white_color">{tableRow.fifties}</td>
-      <td className="p5 white_color">{tableRow.hundreds}</td>
-      <td className="p5 white_color">{tableRow.notOuts}</td>
-      <td className="p5 white_color">{tableRow.highestScore}</td>
-    </tr>
-  );
-}
+const COLUMNS = [
+  { key: "rank", label: "Rank" },
+  { key: "name", label: "Player" },
+  { key: "matches", label: "Mat", numeric: true },
+  { key: "innings", label: "Ins", numeric: true },
+  { key: "ballsFaced", label: "BF", numeric: true },
+  { key: "runsScored", label: "Rns", numeric: true },
+  { key: "fours", label: "4s", numeric: true },
+  { key: "sixers", label: "6s", numeric: true },
+  { key: "fifties", label: "50s", numeric: true },
+  { key: "hundreds", label: "100s", numeric: true },
+  { key: "notOuts", label: "NO", numeric: true },
+  { key: "highestScore", label: "HS", numeric: true },
+];
 
 export default function RenderBattingDataTable({ battingData }) {
-  return (
-    <table cellSpacing="0">
-      <DataBattingTableHeader />
-      <tbody>
-        {battingData.map((row, idx) => (
-          <DataBattingTableRow key={idx} tableRow={row} indexVal={idx} />
-        ))}
-      </tbody>
-    </table>
-  );
+  const rows = battingData.map((r) => ({
+    ...r,
+    name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
+  }));
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="runsScored" />;
 }

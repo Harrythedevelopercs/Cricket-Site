@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MatchCentreSkeleton } from "../../components/skeletons/PageSkeletons";
+import PitchBar from "../../components/ui/PitchBar";
+import Partnerships from "../../components/ui/Partnerships";
 
 interface Bat {
   playerId?: number;
@@ -347,10 +349,6 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
     .filter(([, v]) => (v as number) > 0)
     .map(([k, v]) => `${k} ${v}`)
     .join(", ");
-  const fow = inn.fallOfWickets
-    .map((f) => `${f.wicket}-${f.runs} (${f.player}${f.over ? `, ${f.over}` : ""})`)
-    .join("   ");
-
   return (
     <article id={`innings-${index + 1}`} className="scroll-mt-36 bg-[var(--panel)] rounded-[2.5vw] lg:rounded-[0.7vw] border border-[var(--panel-line)] overflow-hidden mb-[5vw] lg:mb-[1.6vw]">
       <div className="flex items-center justify-between bg-[var(--panel-2)] px-[4vw] lg:px-[1.3vw] py-[3vw] lg:py-[0.9vw]">
@@ -440,12 +438,11 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
             {inn.didNotBat.join(", ")}
           </p>
         ) : null}
-        {fow ? (
-          <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[2.8vw] lg:text-[0.8vw] mt-[2vw] lg:mt-[0.5vw]">
-            <span className="text-[color:var(--text-dim)]">Fall of wickets: </span>
-            {fow}
-          </p>
-        ) : null}
+        <Partnerships
+          fallOfWickets={inn.fallOfWickets}
+          total={inn.total}
+          teamName={inn.teamName}
+        />
       </div>
 
       {/* Bowling */}
@@ -565,14 +562,7 @@ export default function MatchCentreClient({
           <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-center text-[2.8vw] lg:text-[0.8vw] mt-[2vw] lg:mt-[0.5vw]">
             {[m.date, m.location].filter(Boolean).join(" · ")}
           </p>
-          <div className="mx-auto mt-5 grid max-w-2xl grid-cols-2 gap-2 lg:mt-6 lg:gap-3">
-            {m.innings.map((inn, index) => (
-              <a key={`${inn.teamName}-${index}`} href={`#innings-${index + 1}`} className="rounded-[var(--radius-sm)] border border-[var(--panel-line)] bg-[var(--panel-2)] px-3 py-3 text-center transition-colors hover:border-[var(--orange)] lg:px-5 lg:py-4">
-                <span className="block truncate text-[0.62rem] font-semibold uppercase tracking-wide text-[color:var(--text-muted)] lg:text-xs">{inn.teamName}</span>
-                <span className="ds-num mt-1 block text-xl text-[color:var(--text)] lg:text-2xl">{inn.total}/{inn.wickets} <small className="font-normal text-[0.65rem] text-[color:var(--text-dim)]">({inn.overs})</small></span>
-              </a>
-            ))}
-          </div>
+          <PitchBar innings={m.innings} />
         </div>
 
         <WormChart innings={m.innings} />

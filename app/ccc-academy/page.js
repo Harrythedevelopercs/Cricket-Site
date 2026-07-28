@@ -13,6 +13,7 @@ import SponsorsBanner from '../components/ui/SponsorsBanner'
 import FixturesGrid from '../components/ui/FixturesGrid'
 import TournamentSection from '../components/ui/TournamentSection'
 import HeroBannerSkeleton from '../components/skeletons/HeroBannerSkeleton'
+import BallLoader from '../components/ui/BallLoader'
 import { usePageTitle } from '../lib/usePageTitle'
 
 const AcademyPageContent = () => {
@@ -57,7 +58,7 @@ const AcademyPageContent = () => {
       switch (block.typeHandle) {
         case 'homeHeroBanner':
           return (
-            <Suspense key={block.id} fallback={<div className="loading-hero">Loading hero...</div>}>
+            <Suspense key={block.id} fallback={<BallLoader label="Loading" />}>
               <HeroBanner data={block} />
             </Suspense>
           )
