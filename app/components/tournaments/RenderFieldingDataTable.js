@@ -1,64 +1,23 @@
 "use client";
 
-import React from "react";
+import StatTable from "./StatTable";
 
-function DataFieldingTableHeader() {
-  return (
-    <thead>
-      <tr>
-        <th style={{ width: "4%", textAlign: "center" }} className="p5 white_color">
-          #
-        </th>
-        <th style={{ width: "6%", textAlign: "center" }} className="p5 white_color border_th">
-          Rank
-        </th>
-        <th style={{ width: "21%", textAlign: "left" }} className="p5 white_color">
-          Player
-        </th>
-        <th className="p5 white_color border_th">Mat</th>
-        <th className="p5 white_color border_th">Cths</th>
-        <th className="p5 white_color border_th">WC</th>
-        <th className="p5 white_color border_th">DR</th>
-        <th className="p5 white_color border_th">IDR</th>
-        <th className="p5 white_color border_th">STM</th>
-        <th className="p5 white_color border_th">TO</th>
-      </tr>
-    </thead>
-  );
-}
-
-function DataFieldingTableRow({ tableRow, indexVal }) {
-  return (
-    <tr>
-      <td style={{ width: "4%", textAlign: "center" }} className="p5 white_color">
-        {indexVal + 1}
-      </td>
-      <td style={{ width: "6%", textAlign: "center" }} className="p5 white_color">
-        {tableRow.rank ?? "-"}
-      </td>
-      <td style={{ width: "21%", textAlign: "left" }} className="p5 white_color">
-        {tableRow.firstName} {tableRow.lastName}
-      </td>
-      <td className="p5 white_color">{tableRow.totalMatches}</td>
-      <td className="p5 white_color">{tableRow.catches}</td>
-      <td className="p5 white_color">{tableRow.wkcatches}</td>
-      <td className="p5 white_color">{tableRow.direct}</td>
-      <td className="p5 white_color">{tableRow.indirect}</td>
-      <td className="p5 white_color">{tableRow.stumpings}</td>
-      <td className="p5 white_color">{tableRow.total}</td>
-    </tr>
-  );
-}
+const COLUMNS = [
+  { key: "rank", label: "Rank" },
+  { key: "name", label: "Player" },
+  { key: "totalMatches", label: "Mat", numeric: true },
+  { key: "catches", label: "Cths", numeric: true },
+  { key: "wkcatches", label: "WC", numeric: true },
+  { key: "direct", label: "DR", numeric: true },
+  { key: "indirect", label: "IDR", numeric: true },
+  { key: "stumpings", label: "STM", numeric: true },
+  { key: "total", label: "TO", numeric: true },
+];
 
 export default function RenderFieldingDataTable({ fieldingData }) {
-  return (
-    <table cellSpacing="0">
-      <DataFieldingTableHeader />
-      <tbody>
-        {fieldingData.map((row, idx) => (
-          <DataFieldingTableRow key={idx} tableRow={row} indexVal={idx} />
-        ))}
-      </tbody>
-    </table>
-  );
+  const rows = fieldingData.map((r) => ({
+    ...r,
+    name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
+  }));
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="total" />;
 }

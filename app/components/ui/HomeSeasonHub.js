@@ -7,6 +7,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import RecordsStrip from "./RecordsStrip";
 import ScoreReel from "./ScoreReel";
 import OverForm from "./OverForm";
+import LadderStrip from "./LadderStrip";
+import SeamRule from "./SeamRule";
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -126,6 +128,7 @@ function DivisionCard({ d }) {
             </span>
           ) : null}
         </div>
+        <LadderStrip position={d.position} teams={d.teams} />
         <div className="flex gap-[5vw] lg:gap-[1.4vw] mt-[3vw] lg:mt-[1vw] roboto-condensed-regular text-[color:var(--text-muted)] text-[3vw] lg:text-[0.85vw]">
           <span>
             <span className="text-[color:var(--win)] roboto-condensed-bold">{d.won}</span> W
@@ -218,7 +221,7 @@ export default function HomeSeasonHub() {
           </div>
           <SyncStamp iso={syncedAt} />
           <OnThisDayCard item={onThisDay} />
-          <div className="mb-[11vw] lg:mb-[3.5vw]" />
+          <SeamRule className="my-[9vw] lg:my-[3vw]" />
 
           <SectionHeading sub="Club Cricket of Chicago leaders">
             Leading This Season

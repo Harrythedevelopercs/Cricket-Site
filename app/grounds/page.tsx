@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { fetchGraphQL } from '../lib/graphqlClient'
 import { getGroundsQuery } from '../lib/queries/groundsQuery'
 import { usePageTitle } from '../lib/usePageTitle'
+import BallLoader from '../components/ui/BallLoader'
 
 interface GroundImageProps {
   alt: string
@@ -298,7 +299,7 @@ export default function GroundSlider() {
   const currentIndex = initialIndex !== -1 ? initialIndex : 0
 
   if (loading) {
-    return <div className="loading">Loading grounds data...</div>
+    return <BallLoader label="Loading grounds" />
   }
 
   if (error) {
