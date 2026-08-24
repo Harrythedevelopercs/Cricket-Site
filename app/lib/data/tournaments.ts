@@ -314,21 +314,52 @@ const yearPageEntries = (): Entry[] =>
     .map((y) => ({ id: y, typeHandle: "tournamentYearPage", title: y, slug: y }));
 
 /**
- * Lightweight list: year pages + tournament STUBS (title/slug/parent only), built from
- * config with ZERO DB reads. /tournaments and /tournaments/[year] only need this, so they
- * no longer trigger a full per-series build.
+ * Lightweight list: year pages + tournament stubs, each stub carrying CCC's OUTCOME in
+ * that competition — division position, team count, P/W/L/T and points — from a single
+ * standings read. This is what lets /tournaments render as a trophy cabinet instead of
+ * a bare title list, still without triggering the full per-series build.
  */
-export async function getTournamentList(): Promise<{ entries: Entry[] }> {
-  const stubs: Entry[] = TRACKED_SERIES.map((s) => ({
-    id: String(s.id),
-    typeHandle: "tournamentPage",
-    title: s.name,
-    slug: String(s.id),
-    flagImage: [],
-    parent: { id: s.year, title: s.year, slug: s.year, typeHandle: "tournamentYearPage" },
-  }));
+async function buildTournamentList(): Promise<{ entries: Entry[] }> {
+  const standings = await prisma.standing.findMany({
+    where: { seriesId: { in: TRACKED_SERIES.map((s) => s.id) } },
+    orderBy: [{ points: "desc" }, { netRunRate: "desc" }],
+  });
+
+  const stubs: Entry[] = TRACKED_SERIES.map((s) => {
+    const table = standings.filter((r) => r.seriesId === s.id); // points-desc order preserved
+    const idx = table.findIndex((r) => isCCCSide(r.teamName, r.teamId));
+    const row = idx >= 0 ? table[idx] : null;
+    return {
+      id: String(s.id),
+      typeHandle: "tournamentPage",
+      title: s.name,
+      slug: String(s.id),
+      flagImage: [],
+      parent: { id: s.year, title: s.year, slug: s.year, typeHandle: "tournamentYearPage" },
+      // Raw standings, always — a 9th of 10 is shown as-is. Null when the series has
+      // no standings rows (nothing synced yet).
+      outcome: row
+        ? {
+            position: idx + 1,
+            teams: table.length,
+            played: row.matches,
+            won: row.won,
+            lost: row.lost,
+            tied: row.tied,
+            noResult: row.noResult,
+            points: row.points,
+          }
+        : null,
+    };
+  });
   return { entries: [...yearPageEntries(), ...stubs] };
 }
+
+export const getTournamentList = unstable_cache(
+  buildTournamentList,
+  ["tournament-list"],
+  { revalidate: 300, tags: ["cricclubs"] }
+);
 
 /**
  * Full tournament details. Pass `year` to build only that season's divisions (all a
