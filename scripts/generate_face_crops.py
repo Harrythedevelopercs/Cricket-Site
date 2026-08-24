@@ -39,15 +39,43 @@ def fetch(url: str) -> bytes:
         return r.read()
 
 
-def largest_face(img):
+# YuNet (a small face-detection DNN, committed under scripts/models/) is the
+# primary detector: it scores its detections, and unlike the Haar cascade it
+# is not fooled by jersey crests or backdrop lions, and still finds faces under
+# caps and sunglasses. The Haar cascade remains as a fallback, restricted to
+# the upper half of the frame where a portrait's face must be — the cascade
+# once picked the club's eagle crest at chest height over the actual face.
+YUNET_MODEL = Path(__file__).resolve().parent / "models/face_detection_yunet_2023mar.onnx"
+
+
+def yunet_face(img):
+    if not YUNET_MODEL.exists():
+        return None
+    h, w = img.shape[:2]
+    det = cv2.FaceDetectorYN.create(str(YUNET_MODEL), "", (w, h), score_threshold=0.6)
+    det.setInputSize((w, h))
+    _, faces = det.detect(img)
+    if faces is None or len(faces) == 0:
+        return None
+    best = max(faces, key=lambda f: f[14])  # highest confidence
+    return tuple(int(v) for v in best[:4])
+
+
+def haar_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
     faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
-    if len(faces) == 0:
+    h = img.shape[0]
+    upper = [f for f in faces if f[1] + f[3] / 2 < h * 0.55]
+    if len(upper) == 0:
         return None
-    return max(faces, key=lambda f: f[2] * f[3])
+    return max(upper, key=lambda f: f[2] * f[3])
+
+
+def largest_face(img):
+    return yunet_face(img) or haar_face(img)
 
 
 def square_crop(img, face):
@@ -60,8 +88,10 @@ def square_crop(img, face):
         x0 = int(cx - edge / 2)
         y0 = int(cy - edge * FACE_CENTER_Y)
     else:
-        # No face found: assume a portrait framing — square anchored to the top.
-        edge = min(h, w)
+        # No face found (caps + sunglasses defeat the cascade): assume a standing
+        # portrait — a tighter square anchored to the top-center puts the head
+        # and shoulders in frame instead of the whole torso.
+        edge = max(int(min(h, w) * 0.62), 120)
         x0 = (w - edge) // 2
         y0 = 0
     x0 = max(0, min(x0, w - edge))
