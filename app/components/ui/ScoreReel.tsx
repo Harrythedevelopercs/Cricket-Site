@@ -11,11 +11,16 @@
 // Raw CricClubs values are shown as-is (negative ranking points included) — the
 // sign and any thousands separators render as static characters between reels.
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 
 const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const nf = new Intl.NumberFormat("en-US");
+
+/** A reel that never enters the viewport still rolls after this long, so a
+    below-the-fold number is never left resting at zero — that zero reads as
+    real data in full-page screenshots, crawler renders, and link previews. */
+const SETTLE_MS = 4000;
 
 export default function ScoreReel({
   value,
@@ -40,10 +45,15 @@ export default function ScoreReel({
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.6 });
   const reduce = useReducedMotion();
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), SETTLE_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   const label = nf.format(value);
   const chars = (group ? label : String(value)).split("");
-  const rolled = reduce || inView;
+  const rolled = reduce || inView || settled;
   let digitIndex = 0;
 
   return (

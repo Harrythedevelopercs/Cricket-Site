@@ -30,7 +30,7 @@ export default function ClubGallery({ limit = 8 }) {
           </Link>
         </div>
 
-        <div className="flex gap-[3vw] lg:gap-[1vw] overflow-x-auto pb-[2vw] lg:pb-[0.6vw] snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
+        <div className="ccc-filmstrip flex gap-[3vw] lg:gap-[1vw] overflow-x-auto pb-[2vw] lg:pb-[0.6vw] snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
           {photos.map((p) => (
             <Link
               key={p.src}
