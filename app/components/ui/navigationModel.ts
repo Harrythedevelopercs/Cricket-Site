@@ -34,6 +34,9 @@ export function buildNavigationItems<T extends NavigationItem>(source: readonly 
     return true;
   });
 
-  const staffWebmail = login ? { ...login, title: "Staff Webmail" } : null;
-  return [...links, ...localItems, ...(staffWebmail ? [staffWebmail] : []), ...buttons];
+  // The CMS nav's staff login/webmail entry is an internal tool, not a page a
+  // visitor should see — it's pulled from the header entirely (the splice
+  // above) and lives in the footer instead (FooterPanel's "Staff Webmail").
+  void login;
+  return [...links, ...localItems, ...buttons];
 }

@@ -23,6 +23,8 @@ const FOOTER_LINKS = [
   { href: '/ccc-academy', label: 'CCC Academy' },
   { href: '/grounds', label: 'Grounds' },
   { href: '/join-us', label: 'Join Us' },
+  // Internal tool — kept out of the visitor-facing header nav on purpose.
+  { href: 'https://mail.hostinger.com/', label: 'Staff Webmail', newTab: true },
 ]
 
 function SocialIcon({ href, icon, alt }) {

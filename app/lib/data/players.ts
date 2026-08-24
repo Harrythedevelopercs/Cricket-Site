@@ -13,6 +13,16 @@ const SEASON_YEAR = String(Math.max(...TRACKED_SERIES.map((s) => Number(s.year))
 const SEASON_SERIES = TRACKED_SERIES.filter((s) => s.year === SEASON_YEAR);
 const SEASON_IDS = SEASON_SERIES.map((s) => s.id);
 
+// People who appear twice in the CricClubs roster under separate player IDs
+// (duplicate profiles upstream). The lesser profile is hidden from the roster
+// listing only — nothing is merged or altered in the DB, and /players/[id]
+// still resolves for these IDs. The real fix is merging the profiles inside
+// CricClubs; delete the ID here once that happens.
+const DUPLICATE_ROSTER_IDS = new Set<number>([
+  7096767, // Prasad Iyer — duplicate of 4245448 (the 26-match profile with a photo)
+  6945507, // Ciro M — 0-match duplicate of 6945510
+]);
+
 const IMG = "https://media.cricclubs.com";
 const img = (p?: string | null) =>
   p ? `${IMG}${p.startsWith("/") ? p : `/${p}`}` : "";
@@ -97,7 +107,7 @@ async function buildPlayerEntries(): Promise<{ entries: Entry[] }> {
     else if (!cur) jersey.set(r.playerId, r.jerseyNumber ?? "0");
   }
 
-  const entries: Entry[] = players.map((p) => ({
+  const entries: Entry[] = players.filter((p) => !DUPLICATE_ROSTER_IDS.has(p.id)).map((p) => ({
     id: String(p.id),
     title: fullName(p.firstName, p.lastName),
     // CricClubs exposes no nationality, so default everyone to the Indian flag (in.svg).

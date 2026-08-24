@@ -16,7 +16,6 @@ test("buildNavigationItems adds local routes before the primary action", () => {
     "Match Reports",
     "Gallery",
     "Our Story",
-    "Staff Webmail",
     "Join Us",
   ]);
 });

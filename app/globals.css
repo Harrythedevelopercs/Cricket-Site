@@ -49,7 +49,9 @@
 
   /* Status */
   --win:  #57C18C;
-  --loss: #E8674A;
+  /* Loss reads as red, not brand orange — a result badge must never look like
+     the accent that marks CTAs and key numbers. */
+  --loss: #E14F4F;
 
   /* Signature — skyline depth layers (near = front/darkest, far = distant/lightest) */
   --skyline:      #05070C;   /* legacy alias = near */
@@ -3132,6 +3134,18 @@ p.credsContainer_para
     margin-left: -25%;
   }
 
+  /* Desktop shows only the enlarged active member. The neighbouring swiper
+     slides otherwise peek out past the info panel — a stray second portrait
+     at the section's bottom-left edge (most visible in light mode). Mobile
+     (≤1024px) keeps every slide visible for swiping. */
+  @media only screen and (min-width: 1025px) {
+    .slider_ele:not(.active) {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+  }
+
   section .joinUs_bgParrallax
 {
     height: 80vh;
@@ -5270,7 +5284,7 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
   --text-dim:   #74849A;
 
   --win:  #2E9E6B;
-  --loss: #D24A2E;
+  --loss: #B93A32;
 
   --skyline:      #1B2433;   /* dark silhouette against a bright sky */
   --skyline-near: #1B2433;
@@ -5863,4 +5877,17 @@ header.main_header .nav_container { width: 80%; }
     scroll-behavior: auto !important;
     transition: none !important;
   }
+}
+
+/* Horizontal photo strips scroll without the browser's native scrollbar —
+   the gray track is the one piece of un-themed chrome on the page. Touch and
+   trackpad scrolling still work; the strip's "all photos" link covers
+   mouse-only visitors. */
+.ccc-filmstrip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+}
+.ccc-filmstrip::-webkit-scrollbar {
+  display: none;
 }

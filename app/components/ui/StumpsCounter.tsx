@@ -13,7 +13,7 @@
 // Under prefers-reduced-motion nothing is armed: the stumps stand, the bails
 // stay on, and the number is simply placed.
 
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 import ScoreReel from "./ScoreReel";
 
@@ -24,7 +24,14 @@ export default function StumpsCounter({ value }: { value: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduce = useReducedMotion();
-  const play = inView && !reduce;
+  // Fire the sequence even if it never scrolls into view (same settle window
+  // as ScoreReel), so the wicket count doesn't rest at zero off-screen.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+  const play = (inView || settled) && !reduce;
   const uid = useId().replace(/:/g, "");
 
   return (

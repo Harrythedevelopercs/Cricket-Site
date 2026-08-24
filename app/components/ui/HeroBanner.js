@@ -310,12 +310,22 @@ export default function HeroBanner({ fixtures, data }) {
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center gap-[3vw] lg:gap-[1vw] mt-[7vw] lg:mt-[2.2vw] ds-eyebrow text-dim">
-              <span>Fixtures</span> <ChicagoStar size="0.6em" className="opacity-70" />
-              <span>Results</span> <ChicagoStar size="0.6em" className="opacity-70" />
-              <span>Standings</span> <ChicagoStar size="0.6em" className="opacity-70" />
-              <span>Stats</span>
-            </div>
+            {/* Inline layout (not flex) so text-wrap: balance can split the four
+                words into even lines on narrow screens — never a lone orphan
+                word on the last line. Each word + trailing star stays one
+                unbreakable unit. */}
+            <p className="[text-wrap:balance] leading-[2.2] lg:leading-normal mt-[7vw] lg:mt-[2.2vw] mb-0 ds-eyebrow text-dim">
+              <span className="inline-flex items-center gap-[3vw] lg:gap-[1vw] whitespace-nowrap mr-[3vw] lg:mr-[1vw]">
+                Fixtures <ChicagoStar size="0.6em" className="opacity-70" />
+              </span>
+              <span className="inline-flex items-center gap-[3vw] lg:gap-[1vw] whitespace-nowrap mr-[3vw] lg:mr-[1vw]">
+                Results <ChicagoStar size="0.6em" className="opacity-70" />
+              </span>
+              <span className="inline-flex items-center gap-[3vw] lg:gap-[1vw] whitespace-nowrap mr-[3vw] lg:mr-[1vw]">
+                Standings <ChicagoStar size="0.6em" className="opacity-70" />
+              </span>
+              <span className="whitespace-nowrap">Stats</span>
+            </p>
 
             {/* With a hero cast the next-match info lives here, in a slim strip —
                 the player on the right stays completely clear. */}

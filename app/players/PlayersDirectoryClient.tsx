@@ -35,9 +35,13 @@ const SORT_OPTIONS: Array<{ value: PlayerSort; label: string }> = [
   { value: "name", label: "Name A–Z" },
 ];
 
-function profileImage(player: Player) {
+// Layered so a face crop that 404s (a new player synced before
+// scripts/generate_face_crops.py has run) falls through to the sample
+// silhouette instead of leaving a blank card.
+function profileImageLayers(player: Player) {
   const file = player.playerImage?.[0]?.url?.split("/").pop()?.split("?")[0];
-  return file ? `/images/players/faces/${file}` : "/images/sample_player_image.png";
+  const sample = "url(/images/sample_player_image.png)";
+  return file ? `url(/images/players/faces/${file}), ${sample}` : sample;
 }
 
 function PlayerCard({ player }: { player: Player }) {
@@ -55,7 +59,7 @@ function PlayerCard({ player }: { player: Player }) {
         <div className="relative aspect-square overflow-hidden bg-[var(--panel-2)]">
           <div
             className="absolute inset-0 scale-[1.01] bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.045]"
-            style={{ backgroundImage: `url(${profileImage(player)})` }}
+            style={{ backgroundImage: profileImageLayers(player) }}
           />
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[rgba(5,7,12,0.72)] to-transparent" />
           {leader ? (
