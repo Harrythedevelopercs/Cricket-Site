@@ -11,7 +11,19 @@ import Link from 'next/link';
 import { Skel } from '../components/skeletons/PageSkeletons';
 import LadderStrip from '../components/ui/LadderStrip';
 import ChicagoStar from '../components/ui/ChicagoStar';
+import ChicagoSkyline from '../components/ui/ChicagoSkyline';
 import { usePageTitle } from '../lib/usePageTitle';
+
+// Per-format art direction for the card faces: a dusk wash to tint the panel
+// and a spine color for the compact rows. The washes mix from theme tokens so
+// both themes hold; the red-ball ember is the ball's own pigment.
+const FORMAT_ART = {
+  'Red Ball': { wash: 'color-mix(in srgb, #B43024 30%, var(--panel-2))', spine: '#B43024' },
+  T20: { wash: 'color-mix(in srgb, var(--lake) 30%, var(--panel-2))', spine: 'var(--lake)' },
+  T10: { wash: 'color-mix(in srgb, var(--lake) 30%, var(--panel-2))', spine: 'var(--lake)' },
+  Playoffs: { wash: 'color-mix(in srgb, var(--orange) 24%, var(--panel-2))', spine: 'var(--orange)' },
+  League: { wash: 'color-mix(in srgb, var(--lake) 13%, var(--panel-2))', spine: 'var(--text-dim)' },
+};
 
 // Short, human format tag derived from the series name.
 function formatTag(name) {
@@ -163,51 +175,83 @@ function Position({ outcome, big }) {
   );
 }
 
-// Current season: a full card per campaign, led by the live table position.
+// The card's art panel — a poster face built from the club's own visual
+// signatures: a per-format dusk wash, the match ball (or trophy / star)
+// bleeding off the corner, and the Chicago skyline along the base.
+function CardArt({ name }) {
+  const tag = formatTag(name);
+  const art = FORMAT_ART[tag] ?? FORMAT_ART.League;
+  return (
+    <div
+      aria-hidden="true"
+      className="relative h-[26vw] overflow-hidden sm:h-[16vw] lg:h-[6.4vw]"
+      style={{ background: `linear-gradient(135deg, ${art.wash} 0%, var(--panel-2) 82%)` }}
+    >
+      {tag === 'Playoffs' ? (
+        <Trophy className="absolute -right-[2%] -top-[14%] aspect-square h-[125%] text-[color:var(--orange)] opacity-30 transition-transform duration-500 group-hover:scale-105" />
+      ) : tag === 'League' ? (
+        <ChicagoStar
+          size="100%"
+          className="absolute -right-[9%] -top-[30%] !h-[150%] !w-auto aspect-square text-[color:var(--lake)] opacity-30 transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <BallMark
+          white={tag !== 'Red Ball'}
+          className="absolute -right-[5%] -top-[52%] aspect-square h-[175%] drop-shadow-xl transition-transform duration-500 group-hover:rotate-[8deg]"
+        />
+      )}
+      <ChicagoSkyline className="absolute inset-x-0 bottom-0 h-[62%] opacity-70" />
+      {/* settle the art into the card body */}
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-[var(--panel)] to-transparent" />
+    </div>
+  );
+}
+
+// Current season: a full card per campaign — poster face up top, the live
+// table position leading the body.
 function SeasonCard({ tournament, hyperLink, completed }) {
   return (
     <Link
       href={hyperLink}
-      className="group relative block overflow-hidden rounded-[3vw] lg:rounded-[0.8vw] border border-[var(--panel-line)] bg-[var(--panel)] p-[5vw] lg:p-[1.5vw] transition-all duration-200 hover:border-[var(--orange)] hover:-translate-y-[0.3vw]"
+      className="group relative block overflow-hidden rounded-[3vw] lg:rounded-[0.8vw] border border-[var(--panel-line)] bg-[var(--panel)] transition-all duration-200 hover:border-[var(--orange)] hover:-translate-y-[0.3vw]"
     >
-      <div className="pointer-events-none absolute -right-[8vw] -top-[8vw] h-[20vw] w-[20vw] lg:-right-[5vw] lg:-top-[5vw] lg:h-[10vw] lg:w-[10vw] rounded-full bg-[var(--glow)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+      <CardArt name={tournament.title} />
 
-      <div className="flex items-center justify-between gap-[2vw] lg:gap-[0.6vw]">
-        <span className="flex items-center gap-[2.5vw] lg:gap-[0.65vw]">
-          <FormatMark name={tournament.title} className="h-[10vw] w-[10vw] lg:h-[2.7vw] lg:w-[2.7vw]" />
+      <div className="p-[5vw] pt-[3.5vw] lg:p-[1.5vw] lg:pt-[1vw]">
+        <div className="flex items-center justify-between gap-[2vw] lg:gap-[0.6vw]">
           <span className="inline-block rounded-full bg-[var(--glow)] px-[3vw] py-[1vw] lg:px-[0.8vw] lg:py-[0.28vw] text-[2.8vw] lg:text-[0.7vw] uppercase tracking-wider roboto-condensed-bold text-[color:var(--orange)]">
             {formatTag(tournament.title)}
           </span>
-        </span>
-        <HonourBadge outcome={tournament.outcome} completed={completed} />
-      </div>
+          <HonourBadge outcome={tournament.outcome} completed={completed} />
+        </div>
 
-      <div className="mt-[4.5vw] lg:mt-[1.2vw]">
-        <Position outcome={tournament.outcome} big />
-      </div>
+        <div className="mt-[3.5vw] lg:mt-[0.9vw]">
+          <Position outcome={tournament.outcome} big />
+        </div>
 
-      {/* The whole division laid out left to right, the club's rung lit — the
-          same ladder the home season hub uses, so "9th of 10" is a picture. */}
-      {tournament.outcome?.position ? (
-        <LadderStrip position={tournament.outcome.position} teams={tournament.outcome.teams} />
-      ) : null}
+        {/* The whole division laid out left to right, the club's rung lit — the
+            same ladder the home season hub uses, so "9th of 10" is a picture. */}
+        {tournament.outcome?.position ? (
+          <LadderStrip position={tournament.outcome.position} teams={tournament.outcome.teams} />
+        ) : null}
 
-      <h3 className="roboto-condensed-bold mt-[2.5vw] lg:mt-[0.65vw] uppercase leading-tight text-[color:var(--text)] text-[4.2vw] lg:text-[1.08vw]">
-        {tournament.title}
-      </h3>
+        <h3 className="roboto-condensed-bold mt-[2.5vw] lg:mt-[0.65vw] uppercase leading-tight text-[color:var(--text)] text-[4.2vw] lg:text-[1.08vw]">
+          {tournament.title}
+        </h3>
 
-      <RecordLine
-        outcome={tournament.outcome}
-        className="mt-[1.8vw] lg:mt-[0.45vw] text-[3.2vw] lg:text-[0.82vw]"
-      />
+        <RecordLine
+          outcome={tournament.outcome}
+          className="mt-[1.8vw] lg:mt-[0.45vw] text-[3.2vw] lg:text-[0.82vw]"
+        />
 
-      <div className="mt-[4.5vw] lg:mt-[1.2vw] flex items-center justify-between border-t border-[var(--panel-line)] pt-[3.5vw] lg:pt-[0.9vw]">
-        <span className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.82vw]">
-          {completed ? 'Final table' : 'Live table'}
-        </span>
-        <span className="roboto-condensed-bold uppercase text-[color:var(--orange)] text-[3.2vw] lg:text-[0.82vw] transition-transform duration-200 group-hover:translate-x-[1vw] lg:group-hover:translate-x-[0.3vw]">
-          View &rarr;
-        </span>
+        <div className="mt-[4.5vw] lg:mt-[1.2vw] flex items-center justify-between border-t border-[var(--panel-line)] pt-[3.5vw] lg:pt-[0.9vw]">
+          <span className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.82vw]">
+            {completed ? 'Final table' : 'Live table'}
+          </span>
+          <span className="roboto-condensed-bold uppercase text-[color:var(--orange)] text-[3.2vw] lg:text-[0.82vw] transition-transform duration-200 group-hover:translate-x-[1vw] lg:group-hover:translate-x-[0.3vw]">
+            View &rarr;
+          </span>
+        </div>
       </div>
     </Link>
   );
@@ -219,6 +263,7 @@ function SeasonRow({ tournament, hyperLink, completed }) {
     <Link
       href={hyperLink}
       className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-[3vw] gap-y-[1.5vw] lg:grid-cols-[auto_minmax(0,1.35fr)_auto_minmax(0,0.9fr)_minmax(0,1.1fr)_auto_auto] lg:gap-x-[1.3vw] rounded-[2.5vw] lg:rounded-[0.6vw] border border-[var(--panel-line)] bg-[var(--panel)] px-[4vw] py-[3.5vw] lg:px-[1.2vw] lg:py-[0.85vw] transition-colors hover:border-[var(--orange)]"
+      style={{ borderLeftWidth: '3px', borderLeftColor: (FORMAT_ART[formatTag(tournament.title)] ?? FORMAT_ART.League).spine }}
     >
       <FormatMark name={tournament.title} className="h-[8.5vw] w-[8.5vw] lg:h-[2.1vw] lg:w-[2.1vw]" />
 
