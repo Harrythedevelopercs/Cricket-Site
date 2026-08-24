@@ -2,28 +2,19 @@
 
 export const dynamic = 'force-dynamic';
 
-// The trophy cabinet: every campaign leads with how it WENT — division position,
-// P/W/L and points from the standings — not just a name and a link. The current
-// season gets full cards; past seasons compress into one row per campaign.
+// The trophy cabinet: every campaign is a full card that leads with how it
+// WENT — division position, P/W/L and points from the standings. Cards are
+// physical: they rise in with a stagger, tilt under the pointer (mouse only,
+// never under prefers-reduced-motion) and carry a soft sheen that follows
+// the cursor. One quiet per-format glow keys the corner of each card.
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Skel } from '../components/skeletons/PageSkeletons';
 import LadderStrip from '../components/ui/LadderStrip';
 import ChicagoStar from '../components/ui/ChicagoStar';
-import ChicagoSkyline from '../components/ui/ChicagoSkyline';
 import { usePageTitle } from '../lib/usePageTitle';
-
-// Per-format art direction for the card faces: a dusk wash to tint the panel
-// and a spine color for the compact rows. The washes mix from theme tokens so
-// both themes hold; the red-ball ember is the ball's own pigment.
-const FORMAT_ART = {
-  'Red Ball': { wash: 'color-mix(in srgb, #B43024 30%, var(--panel-2))', spine: '#B43024' },
-  T20: { wash: 'color-mix(in srgb, var(--lake) 30%, var(--panel-2))', spine: 'var(--lake)' },
-  T10: { wash: 'color-mix(in srgb, var(--lake) 30%, var(--panel-2))', spine: 'var(--lake)' },
-  Playoffs: { wash: 'color-mix(in srgb, var(--orange) 24%, var(--panel-2))', spine: 'var(--orange)' },
-  League: { wash: 'color-mix(in srgb, var(--lake) 13%, var(--panel-2))', spine: 'var(--text-dim)' },
-};
 
 // Short, human format tag derived from the series name.
 function formatTag(name) {
@@ -34,6 +25,17 @@ function formatTag(name) {
   if (n.includes('red ball') || n.includes('redball')) return 'Red Ball';
   return 'League';
 }
+
+// One quiet per-format tint, used as a soft corner glow on each card. Mixed
+// from theme tokens so both themes hold; the red-ball ember is the ball's own
+// pigment.
+const FORMAT_GLOW = {
+  'Red Ball': 'color-mix(in srgb, #B43024 26%, transparent)',
+  T20: 'color-mix(in srgb, var(--lake) 26%, transparent)',
+  T10: 'color-mix(in srgb, var(--lake) 26%, transparent)',
+  Playoffs: 'color-mix(in srgb, var(--orange) 22%, transparent)',
+  League: 'color-mix(in srgb, var(--lake) 14%, transparent)',
+};
 
 const ordinal = (n) => {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -85,35 +87,36 @@ function BallMark({ white = false, className = '' }) {
   );
 }
 
-// Every campaign gets a pictorial mark keyed to its format — unlike the old
-// club crest repeated on all thirteen cards, these actually differentiate.
+// Every campaign gets a small pictorial mark keyed to its format — the ball
+// it's played with, a trophy for playoffs, the Chicago star for leagues.
+// Bare objects, no container chrome.
 function FormatMark({ name, className = '' }) {
   const tag = formatTag(name);
-  const well = `flex shrink-0 items-center justify-center rounded-full border border-[var(--panel-line)] bg-[var(--panel-2)] ${className}`;
+  const base = `inline-flex shrink-0 items-center justify-center ${className}`;
   if (tag === 'Red Ball') {
     return (
-      <span className={well} title="Red-ball cricket">
-        <BallMark className="h-[66%] w-[66%]" />
+      <span className={base} title="Red-ball cricket">
+        <BallMark className="h-full w-full" />
       </span>
     );
   }
   if (tag === 'T20' || tag === 'T10') {
     return (
-      <span className={well} title={`${tag} — white-ball cricket`}>
-        <BallMark white className="h-[66%] w-[66%]" />
+      <span className={base} title={`${tag} — white-ball cricket`}>
+        <BallMark white className="h-full w-full" />
       </span>
     );
   }
   if (tag === 'Playoffs') {
     return (
-      <span className={`${well} text-[color:var(--orange)]`} title="Playoffs">
-        <Trophy className="h-[56%] w-[56%]" />
+      <span className={`${base} text-[color:var(--orange)]`} title="Playoffs">
+        <Trophy className="h-full w-full" />
       </span>
     );
   }
   return (
-    <span className={`${well} text-[color:var(--lake)]`} title="League">
-      <ChicagoStar size="56%" />
+    <span className={`${base} text-[color:var(--lake)]`} title="League">
+      <ChicagoStar size="100%" />
     </span>
   );
 }
@@ -156,16 +159,15 @@ function RecordLine({ outcome, className = '' }) {
   );
 }
 
-function Position({ outcome, big }) {
-  const num = big ? 'text-[11vw] lg:text-[2.9vw]' : 'text-[6.5vw] lg:text-[1.5vw]';
+function Position({ outcome }) {
   if (!outcome?.position) {
     return (
-      <span className={`ds-num leading-none text-[color:var(--text-dim)] ${num}`}>—</span>
+      <span className="ds-num leading-none text-[color:var(--text-dim)] text-[11vw] lg:text-[2.9vw]">—</span>
     );
   }
   return (
     <span className="flex items-end gap-[1.6vw] lg:gap-[0.4vw]">
-      <span className={`ds-num leading-none text-[color:var(--orange)] ${num}`}>
+      <span className="ds-num leading-none text-[color:var(--orange)] text-[11vw] lg:text-[2.9vw]">
         {ordinal(outcome.position)}
       </span>
       <span className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3vw] lg:text-[0.8vw] leading-none mb-[0.6vw] lg:mb-[0.15vw]">
@@ -175,58 +177,77 @@ function Position({ outcome, big }) {
   );
 }
 
-// The card's art panel — a poster face built from the club's own visual
-// signatures: a per-format dusk wash, the match ball (or trophy / star)
-// bleeding off the corner, and the Chicago skyline along the base.
-function CardArt({ name }) {
-  const tag = formatTag(name);
-  const art = FORMAT_ART[tag] ?? FORMAT_ART.League;
-  return (
-    <div
-      aria-hidden="true"
-      className="relative h-[26vw] overflow-hidden sm:h-[16vw] lg:h-[6.4vw]"
-      style={{ background: `linear-gradient(135deg, ${art.wash} 0%, var(--panel-2) 82%)` }}
-    >
-      {tag === 'Playoffs' ? (
-        <Trophy className="absolute -right-[2%] -top-[14%] aspect-square h-[125%] text-[color:var(--orange)] opacity-30 transition-transform duration-500 group-hover:scale-105" />
-      ) : tag === 'League' ? (
-        <ChicagoStar
-          size="100%"
-          className="absolute -right-[9%] -top-[30%] !h-[150%] !w-auto aspect-square text-[color:var(--lake)] opacity-30 transition-transform duration-500 group-hover:scale-105"
-        />
-      ) : (
-        <BallMark
-          white={tag !== 'Red Ball'}
-          className="absolute -right-[5%] -top-[52%] aspect-square h-[175%] drop-shadow-xl transition-transform duration-500 group-hover:rotate-[8deg]"
-        />
-      )}
-      <ChicagoSkyline className="absolute inset-x-0 bottom-0 h-[62%] opacity-70" />
-      {/* settle the art into the card body */}
-      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-[var(--panel)] to-transparent" />
-    </div>
-  );
-}
+// Every campaign as a physical card. The tilt writes transforms straight to
+// the element (no re-render per pointer event); touch never triggers it, and
+// prefers-reduced-motion turns it off entirely.
+function SeasonCard({ tournament, hyperLink, completed, index }) {
+  const ref = useRef(null);
+  const reduce = useReducedMotion();
+  const glow = FORMAT_GLOW[formatTag(tournament.title)] ?? FORMAT_GLOW.League;
 
-// Current season: a full card per campaign — poster face up top, the live
-// table position leading the body.
-function SeasonCard({ tournament, hyperLink, completed }) {
-  return (
-    <Link
-      href={hyperLink}
-      className="group relative block overflow-hidden rounded-[3vw] lg:rounded-[0.8vw] border border-[var(--panel-line)] bg-[var(--panel)] transition-all duration-200 hover:border-[var(--orange)] hover:-translate-y-[0.3vw]"
-    >
-      <CardArt name={tournament.title} />
+  const onPointerMove = (e) => {
+    const el = ref.current;
+    if (!el || e.pointerType !== 'mouse') return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    el.style.setProperty('--mx', `${px * 100}%`);
+    el.style.setProperty('--my', `${py * 100}%`);
+    if (!reduce) {
+      el.style.transition = 'transform 0s';
+      const rx = (0.5 - py) * 3.5;
+      const ry = (px - 0.5) * 4.5;
+      el.style.transform = `perspective(1100px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    }
+  };
+  const onPointerLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transition = 'transform 0.45s cubic-bezier(0.23, 1, 0.32, 1)';
+    el.style.transform = '';
+  };
 
-      <div className="p-[5vw] pt-[3.5vw] lg:p-[1.5vw] lg:pt-[1vw]">
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, delay: reduce ? 0 : (index % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      className="h-full"
+    >
+      <Link
+        ref={ref}
+        href={hyperLink}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
+        className="group relative flex h-full flex-col overflow-hidden rounded-[3vw] lg:rounded-[0.8vw] border border-[var(--panel-line)] bg-[var(--panel)] p-[5vw] lg:p-[1.5vw] transition-colors duration-200 hover:border-[var(--orange)] focus-visible:border-[var(--orange)]"
+        style={{ backgroundImage: `radial-gradient(95% 75% at 100% 0%, ${glow} 0%, transparent 58%)` }}
+      >
+        {/* pointer-following sheen — visible only while hovered */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background:
+              'radial-gradient(40% 55% at var(--mx, 70%) var(--my, 20%), rgba(255,255,255,0.10), transparent 72%)',
+            mixBlendMode: 'soft-light',
+          }}
+        />
+
         <div className="flex items-center justify-between gap-[2vw] lg:gap-[0.6vw]">
-          <span className="inline-block rounded-full bg-[var(--glow)] px-[3vw] py-[1vw] lg:px-[0.8vw] lg:py-[0.28vw] text-[2.8vw] lg:text-[0.7vw] uppercase tracking-wider roboto-condensed-bold text-[color:var(--orange)]">
+          <span className="inline-flex items-center gap-[2vw] lg:gap-[0.5vw] text-[2.8vw] lg:text-[0.72vw] uppercase tracking-[0.14em] roboto-condensed-bold text-[color:var(--text-muted)]">
+            <FormatMark name={tournament.title} className="h-[4.6vw] w-[4.6vw] lg:h-[1.15vw] lg:w-[1.15vw] transition-transform duration-500 group-hover:rotate-[24deg]" />
             {formatTag(tournament.title)}
           </span>
           <HonourBadge outcome={tournament.outcome} completed={completed} />
         </div>
 
-        <div className="mt-[3.5vw] lg:mt-[0.9vw]">
-          <Position outcome={tournament.outcome} big />
+        <h3 className="roboto-condensed-bold mt-[3.5vw] lg:mt-[0.95vw] min-h-[2.5em] uppercase leading-tight text-[color:var(--text)] text-[4.2vw] lg:text-[1.08vw]">
+          {tournament.title}
+        </h3>
+
+        <div className="mt-[2vw] lg:mt-[0.5vw]">
+          <Position outcome={tournament.outcome} />
         </div>
 
         {/* The whole division laid out left to right, the club's rung lit — the
@@ -235,16 +256,12 @@ function SeasonCard({ tournament, hyperLink, completed }) {
           <LadderStrip position={tournament.outcome.position} teams={tournament.outcome.teams} />
         ) : null}
 
-        <h3 className="roboto-condensed-bold mt-[2.5vw] lg:mt-[0.65vw] uppercase leading-tight text-[color:var(--text)] text-[4.2vw] lg:text-[1.08vw]">
-          {tournament.title}
-        </h3>
-
         <RecordLine
           outcome={tournament.outcome}
-          className="mt-[1.8vw] lg:mt-[0.45vw] text-[3.2vw] lg:text-[0.82vw]"
+          className="mt-[2.5vw] lg:mt-[0.65vw] text-[3.2vw] lg:text-[0.82vw]"
         />
 
-        <div className="mt-[4.5vw] lg:mt-[1.2vw] flex items-center justify-between border-t border-[var(--panel-line)] pt-[3.5vw] lg:pt-[0.9vw]">
+        <div className="mt-auto flex items-center justify-between border-t border-[var(--panel-line)] pt-[3.5vw] lg:pt-[0.9vw]">
           <span className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.82vw]">
             {completed ? 'Final table' : 'Live table'}
           </span>
@@ -252,54 +269,8 @@ function SeasonCard({ tournament, hyperLink, completed }) {
             View &rarr;
           </span>
         </div>
-      </div>
-    </Link>
-  );
-}
-
-// Past seasons: one compact row per campaign — name, finish, record, honours.
-function SeasonRow({ tournament, hyperLink, completed }) {
-  return (
-    <Link
-      href={hyperLink}
-      className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-[3vw] gap-y-[1.5vw] lg:grid-cols-[auto_minmax(0,1.35fr)_auto_minmax(0,0.9fr)_minmax(0,1.1fr)_auto_auto] lg:gap-x-[1.3vw] rounded-[2.5vw] lg:rounded-[0.6vw] border border-[var(--panel-line)] bg-[var(--panel)] px-[4vw] py-[3.5vw] lg:px-[1.2vw] lg:py-[0.85vw] transition-colors hover:border-[var(--orange)]"
-      style={{ borderLeftWidth: '3px', borderLeftColor: (FORMAT_ART[formatTag(tournament.title)] ?? FORMAT_ART.League).spine }}
-    >
-      <FormatMark name={tournament.title} className="h-[8.5vw] w-[8.5vw] lg:h-[2.1vw] lg:w-[2.1vw]" />
-
-      <span className="roboto-condensed-bold min-w-0 truncate uppercase leading-tight text-[color:var(--text)] text-[3.7vw] lg:text-[0.95vw]">
-        {tournament.title}
-      </span>
-
-      <span className="justify-self-end lg:justify-self-start">
-        <Position outcome={tournament.outcome} />
-      </span>
-
-      {/* Division ladder, desktop only — the row stays a single line. */}
-      <span className="hidden lg:block min-w-0 [&_.ccc-ladder]:mt-0">
-        {tournament.outcome?.position ? (
-          <LadderStrip position={tournament.outcome.position} teams={tournament.outcome.teams} />
-        ) : null}
-      </span>
-
-      <RecordLine outcome={tournament.outcome} className="col-span-3 lg:col-span-1 text-[3vw] lg:text-[0.8vw]" />
-
-      <span className="hidden lg:inline-flex">
-        <HonourBadge outcome={tournament.outcome} completed={completed} />
-      </span>
-
-      <span
-        aria-hidden="true"
-        className="hidden lg:inline text-[color:var(--orange)] transition-transform duration-200 group-hover:translate-x-[0.3vw]"
-      >
-        &rarr;
-      </span>
-
-      {/* Honours ride below the record on mobile, where the row wraps. */}
-      <span className="col-span-3 lg:hidden empty:hidden">
-        <HonourBadge outcome={tournament.outcome} completed={completed} />
-      </span>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -354,22 +325,16 @@ export default function Page() {
           <p className="roboto-condensed-regular text-center text-[color:var(--text)]">{error}</p>
         ) : loading ? (
           <div className="space-y-[8vw] lg:space-y-[2.5vw]">
-            <div>
-              <Skel className="mb-[4vw] lg:mb-[1.2vw] h-[6vw] w-[20vw] lg:h-[1.7vw] lg:w-[7vw]" />
-              <div className="grid grid-cols-1 gap-[5vw] sm:grid-cols-2 lg:grid-cols-3 lg:gap-[1.5vw]">
-                {[0, 1, 2].map((i) => (
-                  <Skel key={i} className="h-[42vw] w-full lg:h-[11vw]" />
-                ))}
+            {[0, 1].map((g) => (
+              <div key={g}>
+                <Skel className="mb-[4vw] lg:mb-[1.2vw] h-[6vw] w-[20vw] lg:h-[1.7vw] lg:w-[7vw]" />
+                <div className="grid grid-cols-1 gap-[5vw] sm:grid-cols-2 lg:grid-cols-3 lg:gap-[1.5vw]">
+                  {[0, 1, 2].map((i) => (
+                    <Skel key={i} className="h-[52vw] w-full lg:h-[13vw]" />
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <Skel className="mb-[4vw] lg:mb-[1.2vw] h-[6vw] w-[20vw] lg:h-[1.7vw] lg:w-[7vw]" />
-              <div className="space-y-[3vw] lg:space-y-[0.7vw]">
-                {[0, 1, 2].map((i) => (
-                  <Skel key={i} className="h-[14vw] w-full lg:h-[3.4vw]" />
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         ) : (
           groupedTournaments.map((group) => {
@@ -392,29 +357,17 @@ export default function Page() {
                 </div>
 
                 {group.tournaments.length ? (
-                  isCurrent ? (
-                    <div className="grid grid-cols-1 gap-[5vw] sm:grid-cols-2 lg:grid-cols-3 lg:gap-[1.5vw]">
-                      {group.tournaments.map((tournament) => (
-                        <SeasonCard
-                          key={tournament.id}
-                          tournament={tournament}
-                          completed={false}
-                          hyperLink={`/tournaments/${group.yearSlug}/${tournament.slug}`}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-[3vw] lg:space-y-[0.7vw]">
-                      {group.tournaments.map((tournament) => (
-                        <SeasonRow
-                          key={tournament.id}
-                          tournament={tournament}
-                          completed
-                          hyperLink={`/tournaments/${group.yearSlug}/${tournament.slug}`}
-                        />
-                      ))}
-                    </div>
-                  )
+                  <div className="grid grid-cols-1 gap-[5vw] sm:grid-cols-2 lg:grid-cols-3 lg:gap-[1.5vw]">
+                    {group.tournaments.map((tournament, index) => (
+                      <SeasonCard
+                        key={tournament.id}
+                        tournament={tournament}
+                        completed={!isCurrent}
+                        index={index}
+                        hyperLink={`/tournaments/${group.yearSlug}/${tournament.slug}`}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <p className="roboto-condensed-regular italic text-[color:var(--text-muted)]">No tournaments found under this year.</p>
                 )}
