@@ -3,10 +3,12 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import UpcomingMatchPanel from "../components/calendar/UpcomingMatchPanel";
 import DateCalendar from "../components/calendar/DateCalendar";
 import FixturesList, { isUpcomingEntry } from "../components/calendar/FixturesList";
 import ResultsList from "../components/calendar/ResultsList";
+import RecentResults from "../components/ui/RecentResults";
 import SectionTitleEle from "../components/ui/SectionTitleEle";
 import { ScheduleSkeleton } from "../components/skeletons/PageSkeletons";
 import { usePageTitle } from "../lib/usePageTitle";
@@ -19,6 +21,38 @@ const VIEWS = [
   { id: "results", label: "Results" },
 ];
 
+const ordinal = (n) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+};
+
+// A division's current table line, same visual language as the home season hub.
+function DivisionSnapshotCard({ d }) {
+  return (
+    <Link href={`/tournaments/${d.year}/${d.slug}`} className="no_underline block group">
+      <div className="ccc-card ccc-card-hover rounded-[3vw] lg:rounded-[0.7vw] p-[4.5vw] lg:p-[1.3vw] h-full">
+        <p className="roboto-condensed-bold text-[color:var(--text)] uppercase text-[3.9vw] lg:text-[1vw] leading-tight">
+          {d.name}
+        </p>
+        <div className="flex items-end gap-[2vw] lg:gap-[0.5vw] mt-[3vw] lg:mt-[0.9vw]">
+          {/* Raw standings, always — even a 10th of 10 is shown as-is. */}
+          <span className="ds-num text-[color:var(--orange)] text-[10vw] lg:text-[2.6vw] leading-none">
+            {d.position ? ordinal(d.position) : "—"}
+          </span>
+          <span className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3vw] lg:text-[0.85vw] mb-[1vw] lg:mb-[0.25vw]">
+            {d.position ? `of ${d.teams}` : "table pending"}
+          </span>
+        </div>
+        <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.2vw] lg:text-[0.85vw] mt-[2.5vw] lg:mt-[0.7vw]">
+          W {d.won} · L {d.lost}
+          <span className="text-[color:var(--text-dim)]"> · {d.points} pts</span>
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 export default function Page() {
   usePageTitle("Schedule");
   const [loading, setLoading] = useState(true);
@@ -28,6 +62,7 @@ export default function Page() {
   const [view, setView] = useState("list");
   const [results, setResults] = useState(null);
   const [resultsLoading, setResultsLoading] = useState(false);
+  const [divisions, setDivisions] = useState(null);
 
   // Results load lazily, the first time that tab is opened.
   useEffect(() => {
@@ -64,6 +99,27 @@ export default function Page() {
       .slice()
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [matches]);
+
+  // Season's-end backfill: with two or fewer fixtures left the list can't carry the
+  // page, so it fills out with where the season stands and how it's been going.
+  const fewFixtures = !loading && !error && upcomingEntries.length <= 2;
+  useEffect(() => {
+    if (!fewFixtures) return;
+    if (results === null && !resultsLoading) {
+      setResultsLoading(true);
+      fetch("/api/recent-results?limit=20")
+        .then((r) => r.json())
+        .then((data) => setResults(data.results || []))
+        .catch(() => setResults([]))
+        .finally(() => setResultsLoading(false));
+    }
+    if (divisions === null) {
+      fetch("/api/home")
+        .then((r) => r.json())
+        .then((data) => setDivisions(data.divisions || []))
+        .catch(() => setDivisions([]));
+    }
+  }, [fewFixtures, results, resultsLoading, divisions]);
 
   if (loading) {
     return <ScheduleSkeleton />;
@@ -126,6 +182,21 @@ export default function Page() {
       {view === "list" ? (
         <div role="tabpanel" id="fixtures-panel-list" aria-labelledby="fixtures-tab-list">
           <FixturesList entries={upcomingEntries} />
+
+          {fewFixtures && divisions?.length > 0 && (
+            <section className="base_paddings mt-[10vw] lg:mt-[3vw]">
+              <div className="max_content center_aligned">
+                <SectionTitleEle>Where the season stands</SectionTitleEle>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.2vw]">
+                  {divisions.map((d) => (
+                    <DivisionSnapshotCard key={d.slug} d={d} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {fewFixtures && <RecentResults results={(results || []).slice(0, 6)} />}
         </div>
       ) : view === "calendar" ? (
         <div role="tabpanel" id="fixtures-panel-calendar" aria-labelledby="fixtures-tab-calendar">
