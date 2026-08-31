@@ -66,6 +66,23 @@ function StandingListEle({ team }) {
 function LeagueStandings({ teamStandings }) {
   const hasTeams = teamStandings && teamStandings.length > 0;
 
+  // No rows: keep the panel title but stand the column header down — a
+  // W/L/D/NR/PTS header over nothing reads as broken.
+  if (!hasTeams) {
+    return (
+      <div className="LT_gridEle LT_league_standings">
+        <div className="standings_listing">
+          <div className="standings_title">
+            <p className="p4 grey_text roboto-condensed-bold">Standings</p>
+          </div>
+          <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+            No standings recorded for this competition yet.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="LT_gridEle LT_league_standings">
       <div className="standings_listing">
@@ -95,15 +112,9 @@ function LeagueStandings({ teamStandings }) {
         </div>
 
         <div className="SListing_listing">
-          {hasTeams ? (
-            teamStandings.slice(0, 10).map((team) => (
-              <StandingListEle key={team.id || Math.random().toString()} team={team} />
-            ))
-          ) : (
-            <div className="p-4 text-center text-[color:var(--text-muted)]">
-              <p>No standings available</p>
-            </div>
-          )}
+          {teamStandings.slice(0, 10).map((team) => (
+            <StandingListEle key={team.id || Math.random().toString()} team={team} />
+          ))}
         </div>
       </div>
     </div>
@@ -132,7 +143,14 @@ export default function LeagueStatsContainer() {
           `/api/tournaments/fixtures?slug=${encodeURIComponent(tournament.slug)}`
         );
         const fixtureData = await res.json();
-        const tournamentFixtures = (fixtureData && fixtureData.entries.filter(entry => entry.mappedSeries && entry.mappedSeries.length > 0)) || [];
+        // Failure shape is { entries: [], error } with a 500 — treat it as the
+        // catch path (no fixtures tab) rather than a legitimately empty list.
+        if (!res.ok || fixtureData?.error) {
+          throw new Error(fixtureData?.error || `Fixtures request failed: ${res.status}`);
+        }
+        const tournamentFixtures = (fixtureData.entries ?? []).filter(
+          (entry) => entry.mappedSeries && entry.mappedSeries.length > 0
+        );
         if (tournament.slug) {
           setAllFixtures((prev) => ({
             ...prev,

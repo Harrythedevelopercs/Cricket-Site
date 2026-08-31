@@ -130,25 +130,33 @@ export default function GalleryPage() {
               </p>
             </div>
           ) : (
-            <div className="columns-2 lg:columns-3 gap-[3vw] lg:gap-[1vw] [column-fill:_balance]">
-              {photos.map((p, i) => (
-                <button
-                  key={p.src}
-                  onClick={() => setOpenIdx(i)}
-                  className="relative block w-full mb-[3vw] lg:mb-[1vw] rounded-[2vw] lg:rounded-[0.6vw] overflow-hidden bg-[var(--panel)] group break-inside-avoid"
-                  aria-label={`Open photo: ${p.alt}`}
-                >
-                  <Image
-                    src={p.src}
-                    alt={p.alt}
-                    width={p.w}
-                    height={p.h}
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                    className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    unoptimized
-                  />
-                </button>
-              ))}
+            // Every frame shares the same 3:2 aspect, so plain columns read as a
+            // flat uniform grid. Featured spans give the set a rhythm: the lead
+            // shot runs wide, and every seventh after it (the manifest is
+            // curated best-first, so the pattern is art-directed for free).
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-[3vw] lg:gap-[1vw] [grid-auto-flow:dense]">
+              {photos.map((p, i) => {
+                const featured = i % 7 === 0;
+                return (
+                  <button
+                    key={p.src}
+                    onClick={() => setOpenIdx(i)}
+                    className={`relative block w-full rounded-[2vw] lg:rounded-[0.6vw] overflow-hidden bg-[var(--panel)] group ${
+                      featured ? "col-span-2 row-span-2 h-full min-h-[40vw] lg:min-h-[26vw]" : "aspect-[3/2]"
+                    }`}
+                    aria-label={`Open photo: ${p.alt}`}
+                  >
+                    <Image
+                      src={p.src}
+                      alt={p.alt}
+                      fill
+                      sizes={featured ? "(max-width: 1024px) 100vw, 66vw" : "(max-width: 1024px) 50vw, 33vw"}
+                      className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      unoptimized
+                    />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

@@ -505,12 +505,15 @@ export default function MatchCentreClient({
     // The server page passes the scorecard when Neon answered; fetch only as a fallback.
     if (initialMatch !== null || !matchId) return;
     fetch(`/api/match/${matchId}`)
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        // A failed read is { error } with a 500 — fall through to the
+        // unavailable card via the catch, never store the error payload as data.
+        if (!r.ok || d?.error) throw new Error(d?.error || `Match request failed: ${r.status}`);
         setM(d);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => console.error("Match centre fetch failed:", e))
+      .finally(() => setLoading(false));
   }, [matchId, initialMatch]);
 
   if (loading) return <MatchCentreSkeleton />;

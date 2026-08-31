@@ -128,12 +128,15 @@ export default function PlayerProfileClient({
     // The server page passes the profile when Neon answered; fetch only as a fallback.
     if (initialProfile !== null || !playerId) return;
     fetch(`/api/player/${playerId}`)
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        // A failed read is { error } with a 500 — fall through to the
+        // unavailable card via the catch, never store the error payload as data.
+        if (!r.ok || d?.error) throw new Error(d?.error || `Player request failed: ${r.status}`);
         setP(d);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => console.error("Player profile fetch failed:", e))
+      .finally(() => setLoading(false));
   }, [playerId, initialProfile]);
 
   if (loading) return <PlayerProfileSkeleton />;
