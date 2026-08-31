@@ -192,9 +192,12 @@ function LeagueLogo({ tournament }) {
 
 function LeagueInfo({ leagueStats }) {
   const safeStats = Array.isArray(leagueStats) ? leagueStats : []
-  
+
   // Only take the first 3 elements
   const statsToDisplay = safeStats.slice(0, 3)
+
+  // Nothing to show — stand down instead of rendering an empty grid cell.
+  if (statsToDisplay.length === 0) return null
 
   return (
     <div className="LT_gridEle LT_league_info flex_grid">

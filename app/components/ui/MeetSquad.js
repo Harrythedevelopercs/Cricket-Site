@@ -103,7 +103,13 @@ export default function MeetSquad({ data }) {
 
   useEffect(() => {
     fetch('/api/players')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json();
+        // On failure ({ entries: [], error }, 500) fall through to the crest
+        // panels rather than treating the outage as an empty roster.
+        if (!r.ok || d?.error) throw new Error(d?.error || `Players request failed: ${r.status}`);
+        return d;
+      })
       .then((d) => {
         const map = {}
         for (const e of d.entries || []) {
@@ -183,7 +189,9 @@ export default function MeetSquad({ data }) {
   }
 
   if (managementData.length === 0) {
-    return <div>No management data available</div>
+    // No people to show — the section stands down entirely rather than
+    // rendering developer text in the page flow.
+    return null
   }
 
   const currentPlayer = managementData[displayIndex] || managementData[0]

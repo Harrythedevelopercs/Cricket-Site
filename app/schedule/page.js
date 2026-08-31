@@ -62,23 +62,42 @@ export default function Page() {
   const [view, setView] = useState("list");
   const [results, setResults] = useState(null);
   const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsError, setResultsError] = useState(false);
   const [divisions, setDivisions] = useState(null);
 
-  // Results load lazily, the first time that tab is opened.
-  useEffect(() => {
-    if (view !== "results" || results !== null) return;
+  // Results load lazily, the first time that tab is opened. A failed read is
+  // { results: [], error } with a 500 — flagged as an error, or ResultsList
+  // would show its honest-looking "No completed matches yet" over an outage.
+  const loadResults = () => {
     setResultsLoading(true);
     fetch("/api/recent-results?limit=20")
-      .then((r) => r.json())
-      .then((data) => setResults(data.results || []))
-      .catch(() => setResults([]))
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok || data?.error) throw new Error(data?.error || `Results request failed: ${r.status}`);
+        setResults(data.results || []);
+        setResultsError(false);
+      })
+      .catch(() => {
+        setResults([]);
+        setResultsError(true);
+      })
       .finally(() => setResultsLoading(false));
+  };
+
+  useEffect(() => {
+    if (view !== "results" || results !== null) return;
+    loadResults();
+     
   }, [view, results]);
 
   useEffect(() => {
     fetch("/api/schedule")
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json();
+        // A failed read comes back as { entries: [], error } with a 500 — without
+        // this check it renders as a false "no upcoming fixtures" (the classic
+        // Neon cold-start moment) instead of an honest error.
+        if (!r.ok || data?.error) throw new Error(data?.error || `Schedule request failed: ${r.status}`);
         setMatches(data);
         setLoading(false);
       })
@@ -106,19 +125,20 @@ export default function Page() {
   useEffect(() => {
     if (!fewFixtures) return;
     if (results === null && !resultsLoading) {
-      setResultsLoading(true);
-      fetch("/api/recent-results?limit=20")
-        .then((r) => r.json())
-        .then((data) => setResults(data.results || []))
-        .catch(() => setResults([]))
-        .finally(() => setResultsLoading(false));
+      loadResults();
     }
     if (divisions === null) {
+      // The backfill is bonus content — on failure it stays absent rather than
+      // rendering around missing data ({ error } carries no divisions key).
       fetch("/api/home")
-        .then((r) => r.json())
-        .then((data) => setDivisions(data.divisions || []))
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok || data?.error) throw new Error(data?.error || `Home request failed: ${r.status}`);
+          setDivisions(data.divisions || []);
+        })
         .catch(() => setDivisions([]));
     }
+     
   }, [fewFixtures, results, resultsLoading, divisions]);
 
   if (loading) {
@@ -126,7 +146,22 @@ export default function Page() {
   }
 
   if (error) {
-    return <div className="error-message">Error loading calendar content: {error}</div>;
+    return (
+      <div className="base_paddings py-20 pt-32 lg:pt-40 text-[color:var(--text)]">
+        <div className="max_content center_aligned">
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-eyebrow ds-eyebrow--orange">Schedule</p>
+            <p className="ds-display mt-3 text-4xl">The calendar didn&rsquo;t load</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload the schedule
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -196,7 +231,7 @@ export default function Page() {
             </section>
           )}
 
-          {fewFixtures && <RecentResults results={(results || []).slice(0, 6)} />}
+          {fewFixtures && !resultsError && <RecentResults results={(results || []).slice(0, 6)} />}
         </div>
       ) : view === "calendar" ? (
         <div role="tabpanel" id="fixtures-panel-calendar" aria-labelledby="fixtures-tab-calendar">
@@ -205,7 +240,29 @@ export default function Page() {
         </div>
       ) : (
         <div role="tabpanel" id="fixtures-panel-results" aria-labelledby="fixtures-tab-results">
-          <ResultsList results={results} loading={resultsLoading} />
+          {resultsError && !resultsLoading ? (
+            <div className="base_paddings">
+              <div className="max_content center_aligned">
+                <div className="ccc-card mx-auto max-w-2xl px-6 py-12 text-center">
+                  <p className="roboto-condensed-bold uppercase text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw]">
+                    Results didn&rsquo;t load
+                  </p>
+                  <p className="roboto-condensed-regular mt-2 text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+                    Usually a slow wake-up, not an outage.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setResults(null); setResultsError(false); }}
+                    className="ccc-btn ccc-btn-primary mt-5"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <ResultsList results={results} loading={resultsLoading} />
+          )}
         </div>
       )}
     </div>

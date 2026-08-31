@@ -157,8 +157,13 @@ export default function LeagueStatsContainer() {
     }
 
     fetch(`/api/tournaments?year=${encodeURIComponent(year)}`)
-      .then((r) => r.json())
-      .then(async (data) => {
+      .then(async (r) => {
+        const data = await r.json();
+        // A failed read is { entries: [], error } with a 500. Without this
+        // check the empty array walks into the not-found branch below and a
+        // transient server error becomes a hard 404 — wrong for the visitor
+        // and worse for search engines.
+        if (!r.ok || data?.error) throw new Error(data?.error || `Tournament request failed: ${r.status}`);
         const allEntries = (data && data.entries) || [];
         const yearTournaments = allEntries.filter(
           (entry) =>
@@ -185,7 +190,9 @@ export default function LeagueStatsContainer() {
       })
       .catch((e) => {
         console.error("Tournament page fetch error:", e);
-        setError(true);
+        // "failed" = the server couldn't answer; plain true = the data answered
+        // and this tournament genuinely isn't in it (a real 404).
+        setError("failed");
         setLoading(false);
       });
   }, [params, fetchFixturesForTournament]);
@@ -224,6 +231,24 @@ export default function LeagueStatsContainer() {
 
   if (loading) {
     return <TournamentDetailSkeleton />;
+  }
+  if (error === "failed") {
+    return (
+      <div className="base_paddings py-20 pt-32 lg:pt-40 text-[color:var(--text)]">
+        <div className="max_content center_aligned">
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-eyebrow ds-eyebrow--orange">Tournament</p>
+            <p className="ds-display mt-3 text-4xl">This one didn&rsquo;t load</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload this tournament
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (error || !tournamentData) {
     return notFound();

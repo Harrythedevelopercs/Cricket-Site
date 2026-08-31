@@ -11,10 +11,19 @@ const getFullImageUrl = (url) => {
   return `${baseUrl}${cleanUrl}`;
 };
 
+// A selected tab with no rows says so instead of presenting a blank panel.
+function TabEmpty() {
+  return (
+    <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+      Nothing recorded for this view yet.
+    </p>
+  );
+}
+
 function PlayerCard({ player }) {
   
   const name = player.playerName || "Unknown Player";
-  const profilePic = getFullImageUrl(player.image[0]?.url || "/images/player_sample_image.png");
+  const profilePic = getFullImageUrl(player.image?.[0]?.url || "/images/player_sample_image.png");
   const cardTitle = player.title || "Player Stats";
   const cardValue = player.cardValue || 0;
   const playerPosition = player.playerPosition || "Player";
@@ -134,29 +143,45 @@ export default function LeagueHighlights({
           </div>
 
           <TabPanel className="react-tabs__tab-panel LS_parent">
-            {leagueStats.map((item, i) => (
-              <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
-            ))}
+            {leagueStats.length > 0 ? (
+              leagueStats.map((item, i) => (
+                <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
+              ))
+            ) : (
+              <TabEmpty />
+            )}
           </TabPanel>
 
           <TabPanel className="react-tabs__tab-panel TP_parent">
-            <section className="TPG_parent">
-              {topPlayers.slice(0, 4).map((rank, index) => (
-                <PlayerCard key={index} player={rank} />
-              ))}
-            </section>
+            {topPlayers.length > 0 ? (
+              <section className="TPG_parent">
+                {topPlayers.slice(0, 4).map((rank, index) => (
+                  <PlayerCard key={index} player={rank} />
+                ))}
+              </section>
+            ) : (
+              <TabEmpty />
+            )}
           </TabPanel>
 
           <TabPanel className="react-tabs__tab-panel LS_parent">
-            {teamBatting.map((item, i) => (
-              <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
-            ))}
+            {teamBatting.length > 0 ? (
+              teamBatting.map((item, i) => (
+                <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
+              ))
+            ) : (
+              <TabEmpty />
+            )}
           </TabPanel>
 
           <TabPanel className="react-tabs__tab-panel LS_parent">
-            {teamBowling.map((item, i) => (
-              <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
-            ))}
+            {teamBowling.length > 0 ? (
+              teamBowling.map((item, i) => (
+                <CredsEle key={i} setNum={item && item.number} setText={item && item.title} />
+              ))
+            ) : (
+              <TabEmpty />
+            )}
           </TabPanel>
         </Tabs>
       </div>

@@ -94,6 +94,15 @@ export default function StatTable({
   const align = (key: string) =>
     key === "rank" ? "center" : key === "name" ? ("left" as const) : undefined;
 
+  // No rows: say so — an eleven-column header over an empty body reads broken.
+  if (sorted.length === 0) {
+    return (
+      <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+        Nothing recorded for this view yet.
+      </p>
+    );
+  }
+
   return (
     <table cellSpacing="0">
       <thead>

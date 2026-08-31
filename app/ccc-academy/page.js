@@ -35,17 +35,32 @@ const AcademyPageContent = () => {
       })
   }, [])
 
-  if (error) {
-    return <div className="error-message">Error loading content: {error}</div>
+  // The CMS answered but without usable blocks — a failure, not a loading
+  // state; without this the page rests as a permanent hero skeleton.
+  const cmsAnswered = pageData != null
+  const blocks = pageData?.entries?.[0]?.homePageBlocks
+
+  if (error || (cmsAnswered && !blocks)) {
+    return (
+      <div className="base_paddings py-20 pt-32 lg:pt-40 text-[color:var(--text)]">
+        <div className="max_content center_aligned">
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-eyebrow ds-eyebrow--orange">CCC Academy</p>
+            <p className="ds-display mt-3 text-4xl">The academy page didn&rsquo;t load</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const renderComponents = () => {
-    if (
-      !pageData ||
-      !pageData.entries ||
-      !pageData.entries[0] ||
-      !pageData.entries[0].homePageBlocks
-    ) {
+    if (!blocks) {
       return (
         <>
           <HeroBannerSkeleton />
@@ -54,7 +69,7 @@ const AcademyPageContent = () => {
       )
     }
 
-    return pageData.entries[0].homePageBlocks.map((block) => {
+    return blocks.map((block) => {
       switch (block.typeHandle) {
         case 'homeHeroBanner':
           return (
