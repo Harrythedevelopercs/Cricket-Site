@@ -90,7 +90,7 @@ const HIDDEN_MANAGEMENT = ['asfand', 'anish']
 // a logo is not a face.
 const looksLikeLogo = (url) => /logo|crest|ccc[-_]?logo/i.test(url || '')
 
-export default function MeetSquad({ data }) {
+export default function MeetSquad({ data, initialRosterPhotos = null }) {
   const managementData = ((data && data.managementPlayerBlocks) || []).filter((p) => {
     const name = (p?.title || '').toLowerCase()
     return !HIDDEN_MANAGEMENT.some((h) => name.includes(h))
@@ -98,10 +98,12 @@ export default function MeetSquad({ data }) {
   const [slideIndex, setSlideIndex] = useState(0)
   const [isDesktop, setIsDesktop] = useState(false)
   // Roster photos from the DB (real CricClubs headshots), keyed by lowercased full
-  // name — used when the CMS entry has no real photo of the person.
-  const [rosterPics, setRosterPics] = useState(null)
+  // name — used when the CMS entry has no real photo of the person. The server
+  // page passes the map; the roster fetch is only the fallback.
+  const [rosterPics, setRosterPics] = useState(initialRosterPhotos)
 
   useEffect(() => {
+    if (initialRosterPhotos !== null) return
     fetch('/api/players')
       .then(async (r) => {
         const d = await r.json();
@@ -119,7 +121,7 @@ export default function MeetSquad({ data }) {
         setRosterPics(map)
       })
       .catch(() => setRosterPics({}))
-  }, [])
+  }, [initialRosterPhotos])
 
   useEffect(() => {
     function handleResize() {

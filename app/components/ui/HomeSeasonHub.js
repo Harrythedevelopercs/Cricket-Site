@@ -188,10 +188,12 @@ function OnThisDayCard({ item }) {
   );
 }
 
-export default function HomeSeasonHub() {
-  const [data, setData] = useState(null);
+export default function HomeSeasonHub({ initialData = null }) {
+  const [data, setData] = useState(initialData);
 
   useEffect(() => {
+    // The server page passes the hub payload; fetch only as the fallback.
+    if (initialData !== null) return;
     fetch("/api/home")
       .then(async (r) => {
         const d = await r.json();
@@ -201,7 +203,7 @@ export default function HomeSeasonHub() {
         setData(d);
       })
       .catch((e) => console.error("Season hub failed:", e));
-  }, []);
+  }, [initialData]);
 
   if (!data || data.error || !data.stats) return null;
   const { season, stats, history, topBatsmen, topBowlers, divisions, syncedAt, onThisDay } = data;

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const results = await getRecentResults(limit);
     return NextResponse.json(
       { results },
-      { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } }
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } }
     );
   } catch (err) {
     return NextResponse.json(

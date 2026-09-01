@@ -17,7 +17,7 @@ import { getHomePageQuery } from "./lib/queries/homePageQuery";
 import PageTransition from "./components/ui/PageTransition";
 import HeroBannerSkeleton from "./components/skeletons/HeroBannerSkeleton";
 
-const HomePageContent = ({ initialPageData, initialFixtures, initialResults, initialReports }) => {
+const HomePageContent = ({ initialPageData, initialFixtures, initialResults, initialReports, initialHome, initialRosterPhotos }) => {
   const [pageData, setPageData] = useState(initialPageData);
   const [error, setError] = useState(null);
   // Upcoming fixtures + recent results come from the local DB (Neon); editorial stays on the CMS.
@@ -119,7 +119,7 @@ const HomePageContent = ({ initialPageData, initialFixtures, initialResults, ini
                   fixturesEntries: dbFixtures ?? block.fixturesEntries,
                 }}
               />
-              <HomeSeasonHub />
+              <HomeSeasonHub initialData={initialHome} />
               <RecentResults results={recentResults ?? []} />
               <MatchReports reports={matchReports ?? []} />
               <ClubGallery />
@@ -133,7 +133,7 @@ const HomePageContent = ({ initialPageData, initialFixtures, initialResults, ini
           // full-width countdown on the same page was pure repetition.
           return <Fragment key={block.id} />;
         case "meetTheManagement":
-          return <MeetSquad key={block.id} data={block} />;
+          return <MeetSquad key={block.id} data={block} initialRosterPhotos={initialRosterPhotos} />;
         case "banner":
           return <BGParralaxBanner key={block.id} data={block} />;
         case "sponsorsBanner":
@@ -152,6 +152,8 @@ export default function HomeClient({
   initialFixtures = null,
   initialResults = null,
   initialReports = null,
+  initialHome = null,
+  initialRosterPhotos = null,
 }) {
   return (
     <PageTransition>
@@ -161,6 +163,8 @@ export default function HomeClient({
           initialFixtures={initialFixtures}
           initialResults={initialResults}
           initialReports={initialReports}
+          initialHome={initialHome}
+          initialRosterPhotos={initialRosterPhotos}
         />
       </section>
     </PageTransition>
