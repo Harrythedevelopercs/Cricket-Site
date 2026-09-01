@@ -11,7 +11,7 @@ export async function GET() {
       { records },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=1800",
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
         },
       }
     );

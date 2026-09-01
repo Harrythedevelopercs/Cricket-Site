@@ -52,11 +52,16 @@ an admin or live-scoring tool. Package name is `ccc`; repo
    columns. (The legacy `app/api/player-stats/route.ts` proxy is now unused.)
 
 ### Rendering pattern
-Pages are still **Client Components** (`'use client'`, `dynamic = 'force-dynamic'`) that
-fetch from internal **`/api/*` routes** in `useEffect`. Those API routes call the
-**server-side, cached** `app/lib/data/*` readers (which hit Neon). So: client fetch →
-server API route → cached DB read. Not full SSR, but the data layer + caching are
-server-side. Editorial still comes straight from the CMS client-side.
+**Server-first with a client fallback.** Every DB-backed page (`/`, `/schedule`,
+`/tournaments`, `/players`, `/players/[id]`, `/records`, `/reports`, `/match/[id]`)
+is a **server page** that calls the cached `app/lib/data/*` reader directly and
+passes `initialData` to a `'use client'` component (`XClient.tsx` beside it). The
+client component fetches its `/api/*` route **only when the server pass failed**
+(`initialData === null`) — so the warm path makes zero client API calls and first
+paint carries real content. The `/api/*` routes remain for that fallback plus
+external consumers, all sending `Cache-Control: public, s-maxage=300,
+stale-while-revalidate=3600`. Editorial (CMS GraphQL) is likewise fetched
+server-side on `/` with a client retry.
 
 ## Tech stack
 
