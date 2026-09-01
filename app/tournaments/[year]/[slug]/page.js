@@ -66,6 +66,23 @@ function StandingListEle({ team }) {
 function LeagueStandings({ teamStandings }) {
   const hasTeams = teamStandings && teamStandings.length > 0;
 
+  // No rows: keep the panel title but stand the column header down — a
+  // W/L/D/NR/PTS header over nothing reads as broken.
+  if (!hasTeams) {
+    return (
+      <div className="LT_gridEle LT_league_standings">
+        <div className="standings_listing">
+          <div className="standings_title">
+            <p className="p4 grey_text roboto-condensed-bold">Standings</p>
+          </div>
+          <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+            No standings recorded for this competition yet.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="LT_gridEle LT_league_standings">
       <div className="standings_listing">
@@ -95,15 +112,9 @@ function LeagueStandings({ teamStandings }) {
         </div>
 
         <div className="SListing_listing">
-          {hasTeams ? (
-            teamStandings.slice(0, 10).map((team) => (
-              <StandingListEle key={team.id || Math.random().toString()} team={team} />
-            ))
-          ) : (
-            <div className="p-4 text-center text-[color:var(--text-muted)]">
-              <p>No standings available</p>
-            </div>
-          )}
+          {teamStandings.slice(0, 10).map((team) => (
+            <StandingListEle key={team.id || Math.random().toString()} team={team} />
+          ))}
         </div>
       </div>
     </div>
@@ -132,7 +143,14 @@ export default function LeagueStatsContainer() {
           `/api/tournaments/fixtures?slug=${encodeURIComponent(tournament.slug)}`
         );
         const fixtureData = await res.json();
-        const tournamentFixtures = (fixtureData && fixtureData.entries.filter(entry => entry.mappedSeries && entry.mappedSeries.length > 0)) || [];
+        // Failure shape is { entries: [], error } with a 500 — treat it as the
+        // catch path (no fixtures tab) rather than a legitimately empty list.
+        if (!res.ok || fixtureData?.error) {
+          throw new Error(fixtureData?.error || `Fixtures request failed: ${res.status}`);
+        }
+        const tournamentFixtures = (fixtureData.entries ?? []).filter(
+          (entry) => entry.mappedSeries && entry.mappedSeries.length > 0
+        );
         if (tournament.slug) {
           setAllFixtures((prev) => ({
             ...prev,
@@ -157,8 +175,13 @@ export default function LeagueStatsContainer() {
     }
 
     fetch(`/api/tournaments?year=${encodeURIComponent(year)}`)
-      .then((r) => r.json())
-      .then(async (data) => {
+      .then(async (r) => {
+        const data = await r.json();
+        // A failed read is { entries: [], error } with a 500. Without this
+        // check the empty array walks into the not-found branch below and a
+        // transient server error becomes a hard 404 — wrong for the visitor
+        // and worse for search engines.
+        if (!r.ok || data?.error) throw new Error(data?.error || `Tournament request failed: ${r.status}`);
         const allEntries = (data && data.entries) || [];
         const yearTournaments = allEntries.filter(
           (entry) =>
@@ -185,7 +208,9 @@ export default function LeagueStatsContainer() {
       })
       .catch((e) => {
         console.error("Tournament page fetch error:", e);
-        setError(true);
+        // "failed" = the server couldn't answer; plain true = the data answered
+        // and this tournament genuinely isn't in it (a real 404).
+        setError("failed");
         setLoading(false);
       });
   }, [params, fetchFixturesForTournament]);
@@ -224,6 +249,24 @@ export default function LeagueStatsContainer() {
 
   if (loading) {
     return <TournamentDetailSkeleton />;
+  }
+  if (error === "failed") {
+    return (
+      <div className="base_paddings py-20 pt-32 lg:pt-40 text-[color:var(--text)]">
+        <div className="max_content center_aligned">
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-eyebrow ds-eyebrow--orange">Tournament</p>
+            <p className="ds-display mt-3 text-4xl">This one didn&rsquo;t load</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload this tournament
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (error || !tournamentData) {
     return notFound();

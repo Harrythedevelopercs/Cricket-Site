@@ -364,7 +364,10 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
         </p>
       </div>
 
-      {/* Batting */}
+      {/* Batting — same stand-down as the bowling table below: no header row
+          over an empty body. */}
+      {inn.batting.length > 0 ? (
+      <>
       <p className="border-b border-[var(--panel-line)] px-[4vw] py-2 text-[0.66rem] uppercase tracking-wide text-[color:var(--text-dim)] lg:hidden">Swipe table for all columns →</p>
       <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`${inn.teamName} batting scorecard`}>
         <table className="min-w-full">
@@ -406,6 +409,8 @@ function InningsCard({ inn, index }: { inn: Innings; index: number }) {
           </tbody>
         </table>
       </div>
+      </>
+      ) : null}
 
       {/* Extras + Total + DNB + FoW */}
       <div className="px-[4vw] lg:px-[1.3vw] py-[3vw] lg:py-[1vw] border-t border-[var(--panel-line)]">
@@ -500,22 +505,36 @@ export default function MatchCentreClient({
     // The server page passes the scorecard when Neon answered; fetch only as a fallback.
     if (initialMatch !== null || !matchId) return;
     fetch(`/api/match/${matchId}`)
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        // A failed read is { error } with a 500 — fall through to the
+        // unavailable card via the catch, never store the error payload as data.
+        if (!r.ok || d?.error) throw new Error(d?.error || `Match request failed: ${r.status}`);
         setM(d);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => console.error("Match centre fetch failed:", e))
+      .finally(() => setLoading(false));
   }, [matchId, initialMatch]);
 
   if (loading) return <MatchCentreSkeleton />;
   if (!m || m.error || !m.found || m.innings.length === 0)
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <p className="roboto-condensed-regular text-[color:var(--text)] p3">Scorecard unavailable for this match.</p>
-        <Link href="/" className="roboto-condensed-bold text-[color:var(--orange)] uppercase hover:underline">
-          ← Home
-        </Link>
+      <div className="min-h-[60vh] base_paddings flex items-center justify-center">
+        <div className="ccc-card w-full max-w-2xl px-6 py-14 text-center">
+          <p className="ds-eyebrow ds-eyebrow--orange">Match centre</p>
+          <p className="ds-display mt-3 text-4xl">No scorecard to show</p>
+          <p className="mt-3 text-[color:var(--text-muted)]">
+            This match may not have a scorecard yet — or the server is still waking up.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary">
+              Try again
+            </button>
+            <Link href="/schedule" className="ccc-btn ccc-btn-ghost">
+              Back to fixtures
+            </Link>
+          </div>
+        </div>
       </div>
     );
 

@@ -193,43 +193,65 @@ export default function HomeSeasonHub() {
 
   useEffect(() => {
     fetch("/api/home")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {});
+      .then(async (r) => {
+        const d = await r.json();
+        // A failed read is { error } with a 500 and no data keys — the whole
+        // hub stands down below rather than framing missing numbers.
+        if (!r.ok || d?.error || !d?.stats) throw new Error(d?.error || `Home request failed: ${r.status}`);
+        setData(d);
+      })
+      .catch((e) => console.error("Season hub failed:", e));
   }, []);
 
-  if (!data || data.error) return null;
+  if (!data || data.error || !data.stats) return null;
   const { season, stats, history, topBatsmen, topBowlers, divisions, syncedAt, onThisDay } = data;
+
+  // Headings live and die with their collections — a heading over an empty
+  // grid reads as broken, so each band stands down without its data.
+  const hasDivisions = Array.isArray(divisions) && divisions.length > 0;
+  const hasLeaders =
+    (Array.isArray(topBatsmen) && topBatsmen.length > 0) ||
+    (Array.isArray(topBowlers) && topBowlers.length > 0);
+  if (!hasDivisions && !hasLeaders) return <RecordsStrip history={history} />;
 
   return (
     <>
       <section className="base_paddings py-[9vw] lg:py-[3vw] relative z-[6]">
         <div className="max_content center_aligned mx-auto">
-          <SectionHeading
-            sub={`${season} — ${Number(stats.matches).toLocaleString()} matches · ${Number(
-              stats.runs
-            ).toLocaleString()} runs · ${Number(stats.wickets).toLocaleString()} wickets · ${Number(
-              stats.sixes
-            ).toLocaleString()} sixes`}
-          >
-            Our Divisions
-          </SectionHeading>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.4vw]">
-            {divisions.map((d) => (
-              <DivisionCard key={d.slug} d={d} />
-            ))}
-          </div>
-          <SyncStamp iso={syncedAt} />
-          <OnThisDayCard item={onThisDay} />
-          <SeamRule className="my-[9vw] lg:my-[3vw]" />
+          {hasDivisions && (
+            <>
+              <SectionHeading
+                sub={`${season} — ${Number(stats.matches).toLocaleString()} matches · ${Number(
+                  stats.runs
+                ).toLocaleString()} runs · ${Number(stats.wickets).toLocaleString()} wickets · ${Number(
+                  stats.sixes
+                ).toLocaleString()} sixes`}
+              >
+                Our Divisions
+              </SectionHeading>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[4vw] lg:gap-[1.4vw]">
+                {divisions.map((d) => (
+                  <DivisionCard key={d.slug} d={d} />
+                ))}
+              </div>
+              <SyncStamp iso={syncedAt} />
+              <OnThisDayCard item={onThisDay} />
+            </>
+          )}
 
-          <SectionHeading sub="Club Cricket of Chicago leaders">
-            Leading This Season
-          </SectionHeading>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw]">
-            <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
-            <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
-          </div>
+          {hasDivisions && hasLeaders && <SeamRule className="my-[9vw] lg:my-[3vw]" />}
+
+          {hasLeaders && (
+            <>
+              <SectionHeading sub="Club Cricket of Chicago leaders">
+                Leading This Season
+              </SectionHeading>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4vw] lg:gap-[1.4vw]">
+                <PerformerList title="Most Runs" unit="Runs" players={topBatsmen} />
+                <PerformerList title="Most Wickets" unit="Wkts" players={topBowlers} />
+              </div>
+            </>
+          )}
         </div>
       </section>
       <RecordsStrip history={history} />

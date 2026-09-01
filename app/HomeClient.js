@@ -39,40 +39,65 @@ const HomePageContent = ({ initialPageData, initialFixtures, initialResults, ini
         });
     }
 
+    // The DB-backed strips degrade softly: on failure the section stands down
+    // (each returns null on empty) rather than framing missing data. The ok /
+    // error checks keep a 500 out of the "legitimately empty" path so at least
+    // the console tells the truth.
+    const readJson = async (r) => {
+      const d = await r.json();
+      if (!r.ok || d?.error) throw new Error(d?.error || `Request failed: ${r.status}`);
+      return d;
+    };
+
     if (initialFixtures === null) {
       fetch("/api/schedule")
-        .then((r) => r.json())
+        .then(readJson)
         .then((d) => setDbFixtures(d.entries || []))
-        .catch(() => setDbFixtures([]));
+        .catch((e) => { console.error("Home fixtures failed:", e); setDbFixtures([]); });
     }
 
     if (initialResults === null) {
       fetch("/api/recent-results")
-        .then((r) => r.json())
+        .then(readJson)
         .then((d) => setRecentResults(d.results || []))
-        .catch(() => setRecentResults([]));
+        .catch((e) => { console.error("Home results failed:", e); setRecentResults([]); });
     }
 
     if (initialReports === null) {
       fetch("/api/match-reports?limit=3")
-        .then((r) => r.json())
+        .then(readJson)
         .then((d) => setMatchReports(d.reports || []))
-        .catch(() => setMatchReports([]));
+        .catch((e) => { console.error("Home reports failed:", e); setMatchReports([]); });
     }
   }, [initialPageData, initialFixtures, initialResults, initialReports]);
 
-  if (error) {
-    return <div className="error-message">Error loading content: {error}</div>;
+  // The CMS answered but without usable blocks — that's a failure, not a
+  // loading state; without this the page rests as a permanent hero skeleton.
+  const cmsAnswered = pageData != null;
+  const blocks = pageData?.entries?.[0]?.homePageBlocks;
+
+  if (error || (cmsAnswered && !blocks)) {
+    return (
+      <div className="base_paddings py-20 pt-32 lg:pt-40 text-[color:var(--text)]">
+        <div className="max_content center_aligned">
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-eyebrow ds-eyebrow--orange">Club Cricket of Chicago</p>
+            <p className="ds-display mt-3 text-4xl">The pavilion is warming up</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              The home page couldn&rsquo;t load its content — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Render the blocks or skeletons
   const renderComponents = () => {
-    if (
-      !pageData ||
-      !pageData.entries ||
-      !pageData.entries[0] ||
-      !pageData.entries[0].homePageBlocks
-    ) {
+    if (!blocks) {
       return (
         <>
           <HeroBannerSkeleton />

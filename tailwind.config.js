@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    // hover: utilities apply only on devices that can actually hover — on
+    // touch, tapped elements otherwise keep their hover state stuck on.
+    future: { hoverOnlyWhenSupported: true },
     darkMode: ['class'],
     content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',

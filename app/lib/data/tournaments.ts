@@ -322,12 +322,18 @@ const yearPageEntries = (): Entry[] =>
 async function buildTournamentList(): Promise<{ entries: Entry[] }> {
   const standings = await prisma.standing.findMany({
     where: { seriesId: { in: TRACKED_SERIES.map((s) => s.id) } },
-    orderBy: [{ points: "desc" }, { netRunRate: "desc" }],
+    // teamId last so full ties order deterministically instead of by row order.
+    orderBy: [{ points: "desc" }, { netRunRate: "desc" }, { teamId: "asc" }],
   });
 
   const stubs: Entry[] = TRACKED_SERIES.map((s) => {
     const table = standings.filter((r) => r.seriesId === s.id); // points-desc order preserved
-    const idx = table.findIndex((r) => isCCCSide(r.teamName, r.teamId));
+    // A table where every side is scoreless (playoff brackets: 0 points, 0
+    // matches all round) carries no ranking signal — a "position" in it is
+    // just row order wearing a number. Assert nothing.
+    const unranked =
+      table.length > 0 && table.every((r) => r.points === 0 && r.matches === 0);
+    const idx = unranked ? -1 : table.findIndex((r) => isCCCSide(r.teamName, r.teamId));
     const row = idx >= 0 ? table[idx] : null;
     return {
       id: String(s.id),

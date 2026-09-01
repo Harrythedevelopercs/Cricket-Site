@@ -48,6 +48,8 @@ interface RecentFormEntry {
 }
 export interface Profile {
   playerId: number;
+  /** False when neither the DB nor CricClubs knows this player id. */
+  found?: boolean;
   name: string;
   photo: string;
   role: string;
@@ -126,22 +128,36 @@ export default function PlayerProfileClient({
     // The server page passes the profile when Neon answered; fetch only as a fallback.
     if (initialProfile !== null || !playerId) return;
     fetch(`/api/player/${playerId}`)
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        // A failed read is { error } with a 500 — fall through to the
+        // unavailable card via the catch, never store the error payload as data.
+        if (!r.ok || d?.error) throw new Error(d?.error || `Player request failed: ${r.status}`);
         setP(d);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => console.error("Player profile fetch failed:", e))
+      .finally(() => setLoading(false));
   }, [playerId, initialProfile]);
 
   if (loading) return <PlayerProfileSkeleton />;
-  if (!p || p.error)
+  if (!p || p.error || p.found === false)
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <p className="roboto-condensed-regular text-[color:var(--text)] p3">Player profile unavailable.</p>
-        <Link href="/players" className="roboto-condensed-bold text-[color:var(--orange)] uppercase hover:underline">
-          ← All Players
-        </Link>
+      <div className="min-h-[60vh] base_paddings flex items-center justify-center">
+        <div className="ccc-card w-full max-w-2xl px-6 py-14 text-center">
+          <p className="ds-eyebrow ds-eyebrow--orange">Player profile</p>
+          <p className="ds-display mt-3 text-4xl">No profile to show</p>
+          <p className="mt-3 text-[color:var(--text-muted)]">
+            This player may not be in the books yet — or the server is still waking up.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary">
+              Try again
+            </button>
+            <Link href="/players" className="ccc-btn ccc-btn-ghost">
+              All players
+            </Link>
+          </div>
+        </div>
       </div>
     );
 

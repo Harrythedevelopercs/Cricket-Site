@@ -282,9 +282,13 @@ export default function Page() {
 
   useEffect(() => {
     fetch('/api/tournaments?view=list')
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data?.entries) return;
+      .then(async (r) => {
+        const data = await r.json();
+        // A failed read is { entries: [], error } with a 500 — and a missing
+        // entries array must become the error state, never a silent blank page.
+        if (!r.ok || data?.error || !Array.isArray(data?.entries)) {
+          throw new Error(data?.error || `Tournaments request failed: ${r.status}`);
+        }
 
         const yearEntries = data.entries.filter((e) => e.typeHandle === 'tournamentYearPage');
         const tournamentEntries = data.entries.filter((e) => e.typeHandle === 'tournamentPage');
@@ -322,7 +326,15 @@ export default function Page() {
         </div>
 
         {error ? (
-          <p className="roboto-condensed-regular text-center text-[color:var(--text)]">{error}</p>
+          <div className="ccc-card mx-auto max-w-2xl px-6 py-14 text-center">
+            <p className="ds-display text-4xl">The record books didn&rsquo;t open</p>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+              Reload tournaments
+            </button>
+          </div>
         ) : loading ? (
           <div className="space-y-[8vw] lg:space-y-[2.5vw]">
             {[0, 1].map((g) => (

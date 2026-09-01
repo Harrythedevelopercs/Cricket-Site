@@ -230,6 +230,10 @@ async function buildPlayerProfile(playerId: number) {
   return {
     playerId,
     bio,
+    // Nothing in the DB and nothing from CricClubs = this player doesn't
+    // exist. Without the flag, an unknown id renders a ghost profile named
+    // "Player" with all-zero stats.
+    found: Boolean(bio || dbPlayer),
     name:
       [bio?.firstName, bio?.lastName].filter(Boolean).join(" ") ||
       [dbPlayer?.firstName, dbPlayer?.lastName].filter(Boolean).join(" ") ||

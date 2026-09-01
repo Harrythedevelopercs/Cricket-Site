@@ -169,11 +169,13 @@ export default function Page() {
       try {
         const res = await fetch('/api/match-reports?limit=12')
         const data: MatchReportsResponse = await res.json()
-        if (Array.isArray(data?.reports)) {
-          setReports(data.reports)
-        } else {
-          throw new Error(data?.error || 'No report data returned from API')
+        // A failed read is { reports: [], error } with a 500 — the empty array
+        // passes Array.isArray, so status and error must be checked FIRST or a
+        // server error renders as a confident "No match reports yet".
+        if (!res.ok || data?.error || !Array.isArray(data?.reports)) {
+          throw new Error(data?.error || `Match reports request failed: ${res.status}`)
         }
+        setReports(data.reports)
       } catch (err) {
         console.error('Error fetching match reports:', err)
         setError('Unable to load match reports right now.')
@@ -203,9 +205,21 @@ export default function Page() {
         {loading ? (
           <ReportsSkeleton />
         ) : error ? (
-          <p className="roboto-condensed-regular text-center text-[color:var(--text)] py-[8vw] lg:py-[3vw]">
-            {error}
-          </p>
+          <div className="ccc-card rounded-[3vw] lg:rounded-[0.8vw] p-[8vw] lg:p-[2.5vw] text-center">
+            <p className="roboto-condensed-bold uppercase text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw]">
+              The reports didn&rsquo;t load
+            </p>
+            <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw] mt-[2vw] lg:mt-[0.5vw]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="ccc-btn ccc-btn-primary mt-[4vw] lg:mt-[1.1vw]"
+            >
+              Reload reports
+            </button>
+          </div>
         ) : reports.length === 0 ? (
           <div className="ccc-card rounded-[3vw] lg:rounded-[0.8vw] p-[8vw] lg:p-[2.5vw] text-center">
             <p className="roboto-condensed-bold uppercase text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw]">

@@ -36,7 +36,7 @@ export default function SingleFixtureEle({ fixture, isActive = false, cmsBaseUrl
 
   return (
     <div
-      className="ccc-card rounded-lg overflow-hidden relative transition-all duration-500 ease-in-out text-[color:var(--text)]"
+      className="ccc-card rounded-lg overflow-hidden relative transition-transform duration-500 ease-in-out text-[color:var(--text)]"
       style={{
         transform: isActive ? 'translateY(-12.5%)' : 'none'
       }}

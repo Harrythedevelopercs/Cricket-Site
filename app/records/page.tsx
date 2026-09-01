@@ -285,15 +285,32 @@ export default function Page() {
         </div>
 
         {error ? (
-          <p className="roboto-condensed-regular text-center text-[color:var(--text)] py-[10vw] lg:py-[4vw]">
-            {error}
-          </p>
+          <div className="ccc-card rounded-[3vw] lg:rounded-[0.8vw] p-[8vw] lg:p-[2.5vw] text-center">
+            <p className="roboto-condensed-bold uppercase text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw]">
+              The record books didn&rsquo;t open
+            </p>
+            <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw] mt-[2vw] lg:mt-[0.5vw]">
+              Usually a slow wake-up, not an outage — give it a moment and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="ccc-btn ccc-btn-primary mt-[4vw] lg:mt-[1.1vw]"
+            >
+              Reload records
+            </button>
+          </div>
         ) : loading ? (
           <RecordsSkeleton />
         ) : !hasAnyData ? (
-          <p className="roboto-condensed-regular text-center text-[color:var(--text-muted)] py-[10vw] lg:py-[4vw]">
-            No CCC stats in the records book yet — check back after the next data sync.
-          </p>
+          <div className="ccc-card rounded-[3vw] lg:rounded-[0.8vw] p-[8vw] lg:p-[2.5vw] text-center">
+            <p className="roboto-condensed-bold uppercase text-[color:var(--text)] text-[4.5vw] lg:text-[1.2vw]">
+              No CCC stats in the records book yet
+            </p>
+            <p className="roboto-condensed-regular text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw] mt-[2vw] lg:mt-[0.5vw]">
+              Records fill in after the next data sync.
+            </p>
+          </div>
         ) : (
           records && (
             <>
@@ -315,15 +332,20 @@ export default function Page() {
                 />
               </div>
 
-              {/* Season bests */}
-              <SectionHeading sub="The best single-season performances, year by year">
-                Season Bests
-              </SectionHeading>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-[4vw] lg:gap-[1.2vw] mb-[11vw] lg:mb-[3.5vw]">
-                {records.seasonBests.map((s) => (
-                  <SeasonCard key={s.year} s={s} />
-                ))}
-              </div>
+              {/* Season bests — heading and grid stand down together when the
+                  payload carries no seasons. */}
+              {records.seasonBests.length > 0 && (
+                <>
+                  <SectionHeading sub="The best single-season performances, year by year">
+                    Season Bests
+                  </SectionHeading>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-[4vw] lg:gap-[1.2vw] mb-[11vw] lg:mb-[3.5vw]">
+                    {records.seasonBests.map((s) => (
+                      <SeasonCard key={s.year} s={s} />
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Milestones */}
               <SectionHeading sub="Career thresholds crossed in club colors">

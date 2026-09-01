@@ -302,12 +302,37 @@ export default function GroundSlider() {
     return <BallLoader label="Loading grounds" />
   }
 
+  // Generic copy on purpose — the raw error carries upstream API/GraphQL
+  // internals that don't belong in front of visitors (it's in the console).
   if (error) {
-    return <div className="error">Error: {error}</div>
+    return (
+      <div className="base_paddings min-h-[70vh] flex items-center justify-center text-[color:var(--text)]">
+        <div className="ccc-card w-full max-w-2xl px-6 py-14 text-center">
+          <p className="ds-eyebrow ds-eyebrow--orange">Grounds</p>
+          <p className="ds-display mt-3 text-4xl">The grounds didn&rsquo;t load</p>
+          <p className="mt-3 text-[color:var(--text-muted)]">
+            Usually a slow wake-up, not an outage — give it a moment and try again.
+          </p>
+          <button type="button" onClick={() => window.location.reload()} className="ccc-btn ccc-btn-primary mt-6">
+            Reload grounds
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (groundsData.length === 0) {
-    return <div className="no-data">No grounds data available.</div>
+    return (
+      <div className="base_paddings min-h-[70vh] flex items-center justify-center text-[color:var(--text)]">
+        <div className="ccc-card w-full max-w-2xl px-6 py-14 text-center">
+          <p className="ds-eyebrow ds-eyebrow--orange">Grounds</p>
+          <p className="ds-display mt-3 text-4xl">No grounds listed yet</p>
+          <p className="mt-3 text-[color:var(--text-muted)]">
+            Home grounds appear here once they&rsquo;re published.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

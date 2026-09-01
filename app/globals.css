@@ -5023,7 +5023,8 @@ div.credsContainer_grph img
   border: 1px solid transparent;
   transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-.ccc-btn:active { transform: translateY(1px); }
+/* Press feedback: the button visibly gives under the pointer. */
+.ccc-btn:active { transform: scale(0.97); }
 .ccc-btn-primary {
   background: var(--orange);
   color: #1a0d05;
@@ -5049,11 +5050,16 @@ div.credsContainer_grph img
   border-radius: var(--radius);
 }
 .ccc-card-hover { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
-.ccc-card-hover:hover {
-  transform: translateY(-3px);
-  border-color: var(--panel-line-strong);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+/* Lift only for real pointers — on touch, :hover sticks after a tap and the
+   card stays floated until something else is tapped. */
+@media (hover: hover) and (pointer: fine) {
+  .ccc-card-hover:hover {
+    transform: translateY(-3px);
+    border-color: var(--panel-line-strong);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+  }
 }
+.ccc-card-hover:active { transform: scale(0.99); }
 .ccc-rule {
   height: 1px;
   border: 0;
@@ -5877,6 +5883,14 @@ header.main_header .nav_container { width: 80%; }
     scroll-behavior: auto !important;
     transition: none !important;
   }
+}
+
+/* Mobile header: the toggle and the menu button sit together on the right.
+   Without this, BOTH carry margin-left auto, the free space splits between
+   the two, and the toggle floats dead-center like a logo slot. */
+@media only screen and (max-width: 1024px) {
+  .theme-toggle { margin-right: 16px; }
+  header.main_header div.mobile_nav_ele { margin-left: 0; }
 }
 
 /* Horizontal photo strips scroll without the browser's native scrollbar —

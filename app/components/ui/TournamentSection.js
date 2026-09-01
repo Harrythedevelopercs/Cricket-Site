@@ -9,9 +9,9 @@ function TopPlayers({ tournament }) {
   if (!tournament || !tournament.topPlayers || tournament.topPlayers.length === 0) {
     return (
       <div className="LT_gridEle LT_fixtures_results_tabs_parent">
-        <div className="p-4 text-center text-[color:var(--text-muted)]">
-          <p>No player stats available</p>
-        </div>
+        <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+          No player stats recorded for this competition yet.
+        </p>
       </div>
     )
   }
@@ -129,6 +129,23 @@ function StandingListEle({ team }) {
 function LeagueStandings({ teamStandings }) {
   const hasTeams = teamStandings && teamStandings.length > 0
 
+  // No rows: keep the panel title but stand the column header down — a
+  // Teams/W/L header over nothing reads as broken.
+  if (!hasTeams) {
+    return (
+      <div className="LT_gridEle LT_league_standings">
+        <div className="standings_listing">
+          <div className="standings_title">
+            <p className="p4 grey_text roboto-condensed-bold">Standings</p>
+          </div>
+          <p className="roboto-condensed-regular w-full py-[6vw] lg:py-[2vw] text-center text-[color:var(--text-muted)] text-[3.4vw] lg:text-[0.92vw]">
+            No standings recorded for this competition yet.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="LT_gridEle LT_league_standings">
       <div className="standings_listing">
@@ -147,15 +164,9 @@ function LeagueStandings({ teamStandings }) {
           </div>
         </div>
         <div className="SListing_listing">
-          {hasTeams ? (
-            teamStandings.slice(0, 10).map((team) => (
-              <StandingListEle key={team.id || Math.random().toString()} team={team} />
-            ))
-          ) : (
-            <div className="p-4 text-center text-[color:var(--text-muted)]">
-              <p>No standings available</p>
-            </div>
-          )}
+          {teamStandings.slice(0, 10).map((team) => (
+            <StandingListEle key={team.id || Math.random().toString()} team={team} />
+          ))}
         </div>
       </div>
     </div>
@@ -192,9 +203,12 @@ function LeagueLogo({ tournament }) {
 
 function LeagueInfo({ leagueStats }) {
   const safeStats = Array.isArray(leagueStats) ? leagueStats : []
-  
+
   // Only take the first 3 elements
   const statsToDisplay = safeStats.slice(0, 3)
+
+  // Nothing to show — stand down instead of rendering an empty grid cell.
+  if (statsToDisplay.length === 0) return null
 
   return (
     <div className="LT_gridEle LT_league_info flex_grid">
