@@ -14,10 +14,10 @@ const COLUMNS = [
   { key: "total", label: "TO", numeric: true },
 ];
 
-export default function RenderFieldingDataTable({ fieldingData }) {
+export default function RenderFieldingDataTable({ fieldingData, limit }) {
   const rows = fieldingData.map((r) => ({
     ...r,
     name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
   }));
-  return <StatTable columns={COLUMNS} rows={rows} leadKey="total" />;
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="total" limit={limit} />;
 }

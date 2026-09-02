@@ -2229,8 +2229,8 @@ div.NZNT_table table
 {
     width:100%;
     background-color: var(--panel);
-    border-radius: 0px 0px 18px 18px;
-    padding-bottom: 3%;
+    /* No radius/padding here: .NZ_NT_container owns the rounded bottom so a
+       footer control can follow the table (see the Tournament stats block). */
     overflow: hidden;
     /* Tabular figures so digits line up vertically across stat columns. */
     font-variant-numeric: tabular-nums;
@@ -4823,7 +4823,7 @@ div.credsContainer_grph img
   .ccc-gate--end i { left: auto; right: 0.35vw; }
 }
 
-/* ---------- Number Zone sortable tables (tournaments/StatTable.tsx) ----------
+/* ---------- Tournament stats sortable tables (tournaments/StatTable.tsx) ----------
    Headings become sort controls; the sorted column carries a proportional fill
    behind its figures. The fill is a real element rather than a background
    gradient so its width can transition, and so the existing zebra/hover
@@ -4857,6 +4857,72 @@ div.credsContainer_grph img
 .ccc-nz-val { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
   .ccc-nz-fill { transition: none; }
+}
+
+/* ---------- Tournament stats: header strip, panel body, footer control ----------
+   (tournaments/TournamentStats.js). The header holds the tournament's name and
+   the season's other tournaments as a pill strip of LINKS (each is its own
+   page); the panel body owns the rounded bottom so a table can end in the
+   "show all" control instead of the table edge. */
+.ccc-nz-head {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.7rem 1.5rem;
+}
+.ccc-nz-tabs {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px;
+  max-width: 100%; border-radius: 999px;
+  border: 1px solid var(--panel-line-strong);
+  overflow-x: auto; scrollbar-width: none;
+}
+.ccc-nz-tabs::-webkit-scrollbar { display: none; }
+.ccc-nz-tab {
+  font-family: var(--font-body); font-weight: 600; font-size: 0.75rem;
+  letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap;
+  padding: 0.45em 1.2em; border-radius: 999px; text-decoration: none;
+  color: var(--text-muted);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.ccc-nz-tab:hover { color: var(--text); }
+.ccc-nz-tab.is-active { background: var(--panel-2); color: var(--orange); }
+.ccc-nz-tab .is-pending { animation: ccc-nz-pending 0.9s ease-in-out infinite; }
+@keyframes ccc-nz-pending { 50% { opacity: 0.4; } }
+
+.NZ_NT_container {
+  background: var(--panel); border-radius: 0 0 18px 18px;
+  overflow: hidden; padding-bottom: 0.9rem;
+}
+.ccc-nz-foot {
+  display: flex; align-items: center; justify-content: center; gap: 1.2rem;
+  padding: 0.9rem 1rem 0.2rem; margin: 0 1.5%;
+  border-top: 1px solid var(--panel-line);
+  scroll-margin-top: 120px; /* clear the fixed header when scrolled back into view */
+}
+.ccc-nz-foot-note {
+  font-family: var(--font-body); font-size: 0.8rem; letter-spacing: 0.02em;
+  color: var(--text-dim);
+}
+.ccc-btn.ccc-nz-more { font-size: 0.78rem; padding: 0.6em 1.3em; }
+.ccc-nz-more-chev {
+  font-style: normal; font-size: 0.8em; line-height: 1;
+  transition: transform 0.25s ease;
+}
+.ccc-nz-more-chev.is-open { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .ccc-nz-tab .is-pending { animation: none; opacity: 0.5; }
+  .ccc-nz-more-chev { transition: none; }
+}
+@media (max-width: 1023px) {
+  div.NZ_title.ccc-nz-head { padding: 4% 3%; }
+  /* Narrow screens: the pill rail becomes free-wrapping chips, so a four-
+     tournament season shows every name instead of clipping the last one
+     behind a scroll nobody can see. */
+  .ccc-nz-tabs {
+    width: 100%; flex-wrap: wrap; gap: 6px;
+    border: 0; border-radius: 0; padding: 0; overflow: visible;
+  }
+  .ccc-nz-tab { font-size: 0.7rem; padding: 0.55em 1em; border: 1px solid var(--panel-line-strong); }
+  .ccc-nz-tab.is-active { border-color: transparent; }
+  .ccc-nz-foot { flex-wrap: wrap; gap: 0.6rem 1rem; }
 }
 
 /* ---------- Pitch bar (app/components/ui/PitchBar.tsx) ---------- */

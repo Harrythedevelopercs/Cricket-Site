@@ -12,10 +12,10 @@ const COLUMNS = [
   { key: "total", label: "Total", numeric: true },
 ];
 
-export default function RenderRankingDataTable({ rankingData }) {
+export default function RenderRankingDataTable({ rankingData, limit }) {
   const rows = rankingData.map((r) => ({
     ...r,
     name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
   }));
-  return <StatTable columns={COLUMNS} rows={rows} leadKey="total" />;
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="total" limit={limit} />;
 }
