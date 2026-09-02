@@ -1,8 +1,8 @@
 "use client";
 
-// The Number Zone's shared table. Fans compare across disciplines constantly, so
-// two things were missing: a way to re-rank by any column, and any visual sense of
-// who leads.
+// The tournament-stats shared table. Fans compare across disciplines constantly,
+// so two things were missing: a way to re-rank by any column, and any visual sense
+// of who leads.
 //
 // - Click a numeric heading to sort by it. Rows then TRAVEL to their new positions
 //   (FLIP) instead of blinking, so a player stays followable as the order changes.
@@ -10,7 +10,10 @@
 //   shape of the leaderboard is visible without reading every number.
 //
 // Column order is preserved as (# · Rank · Player · stats…) because the existing
-// Number Zone CSS aligns columns by nth-child position.
+// stats-table CSS (legacy NZ_* class names) aligns columns by nth-child position.
+//
+// `limit` shows only the first N rows of the CURRENT sort, so "top ten" always
+// means the top ten by the column the reader chose.
 //
 // FLIP measures offsetTop, not getBoundingClientRect, so a scroll between renders
 // can't corrupt the deltas.
@@ -37,11 +40,14 @@ export default function StatTable({
   columns,
   rows,
   leadKey,
+  limit,
 }: {
   columns: StatColumn[];
   rows: StatRow[];
   /** The stat this table is really about — sorted and filled by default. */
   leadKey: string;
+  /** Show only the first N rows of the current sort; undefined = every row. */
+  limit?: number;
 }) {
   const reduce = useReducedMotion();
   const [sortKey, setSortKey] = useState(leadKey);
@@ -59,6 +65,8 @@ export default function StatTable({
       return String(av ?? "").localeCompare(String(bv ?? ""));
     });
   }, [rows, sortKey, columns]);
+
+  const visible = limit != null ? sorted.slice(0, limit) : sorted;
 
   const sortedCol = columns.find((c) => c.key === sortKey);
   const max = useMemo(() => {
@@ -87,7 +95,7 @@ export default function StatTable({
     lastTops.current = new Map(
       trs.map((tr) => [tr.dataset.rid ?? "", tr.offsetTop])
     );
-  }, [sorted, reduce]);
+  }, [visible, reduce]);
 
   const width = (key: string) =>
     key === "rank" ? "6%" : key === "name" ? "21%" : undefined;
@@ -138,7 +146,7 @@ export default function StatTable({
         </tr>
       </thead>
       <tbody ref={bodyRef}>
-        {sorted.map(({ row, id }, idx) => (
+        {visible.map(({ row, id }, idx) => (
           <tr key={id} data-rid={id}>
             <td style={{ width: "4%", textAlign: "center" }} className="p5 white_color">
               {idx + 1}

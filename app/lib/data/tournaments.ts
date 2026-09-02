@@ -153,7 +153,7 @@ async function buildDetail(series: { id: number; name: string; year: string }) {
     };
   });
 
-  // Number Zone — RAW row shape (NumberZone splits `player` and renames short codes)
+  // Stat tables — RAW row shape (TournamentStats splits `player` and renames short codes)
   const battingNumberZone = batting.map((b) => ({
     player: fullName(b.firstName, b.lastName),
     mat: b.matches,

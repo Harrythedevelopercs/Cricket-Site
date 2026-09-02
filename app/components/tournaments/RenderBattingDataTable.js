@@ -17,10 +17,10 @@ const COLUMNS = [
   { key: "highestScore", label: "HS", numeric: true },
 ];
 
-export default function RenderBattingDataTable({ battingData }) {
+export default function RenderBattingDataTable({ battingData, limit }) {
   const rows = battingData.map((r) => ({
     ...r,
     name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
   }));
-  return <StatTable columns={COLUMNS} rows={rows} leadKey="runsScored" />;
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="runsScored" limit={limit} />;
 }

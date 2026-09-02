@@ -100,7 +100,7 @@ export function MatchCentreSkeleton() {
   );
 }
 
-/* Tournament detail — featured banner, then the Number Zone table. */
+/* Tournament detail — featured banner, then the stats table. */
 export function TournamentDetailSkeleton() {
   return (
     <section className="base_paddings pt-[100px] pb-[6vw] lg:pt-[136px] lg:pb-[2.5vw]">

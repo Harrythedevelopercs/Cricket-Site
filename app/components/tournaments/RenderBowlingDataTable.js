@@ -17,10 +17,10 @@ const COLUMNS = [
   { key: "dotBalls", label: "DB", numeric: true },
 ];
 
-export default function RenderBowlingDataTable({ bowlingData }) {
+export default function RenderBowlingDataTable({ bowlingData, limit }) {
   const rows = bowlingData.map((r) => ({
     ...r,
     name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
   }));
-  return <StatTable columns={COLUMNS} rows={rows} leadKey="wickets" />;
+  return <StatTable columns={COLUMNS} rows={rows} leadKey="wickets" limit={limit} />;
 }
